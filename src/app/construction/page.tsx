@@ -327,7 +327,7 @@ export default function ConstructionPage() {
           console.log(`✅ Loaded ${data.images.length} total images from Cloudinary, ${filteredImages.length} after filtering (excluding hero/fence)`);
           
           // Preload first 6 gallery images for instant display
-          filteredImages.slice(0, 6).forEach((img, idx) => {
+          filteredImages.slice(0, 6).forEach((img: CloudinaryImage) => {
             const preloadLink = document.createElement('link');
             preloadLink.rel = 'preload';
             preloadLink.as = 'image';
