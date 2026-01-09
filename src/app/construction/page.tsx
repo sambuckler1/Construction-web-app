@@ -18,7 +18,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import * as React from "react";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { Carousel } from "@/components/ui/carousel";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type ConstructionFormValues = {
   name: string;
@@ -30,7 +33,7 @@ type ConstructionFormValues = {
   message: string;
 };
 
-// Helper function to get optimized Cloudinary URL
+// Helper function to get optimized Cloudinary URL - MUST use f_auto, q_auto, explicit width
 function getCloudinaryUrl(publicId: string, forThumbnail: boolean = true, useTrim: boolean = true): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) return "";
@@ -38,22 +41,144 @@ function getCloudinaryUrl(publicId: string, forThumbnail: boolean = true, useTri
   const trimEffect = useTrim ? "e_trim:auto," : "";
   
   if (forThumbnail) {
-    // For thumbnails: crop to fill, remove whitespace, ensure square aspect
-    // e_trim:auto removes whitespace borders, g_auto centers on main subject
-    return `https://res.cloudinary.com/${cloudName}/image/upload/${trimEffect}f_auto,q_auto,w_800,h_800,c_fill,g_auto/${publicId}`;
+    // CRITICAL: f_auto (WebP/AVIF), q_auto (smart compression), w_400 (reduced from 800px for faster loading)
+    return `https://res.cloudinary.com/${cloudName}/image/upload/${trimEffect}f_auto,q_auto,w_400,c_fill,g_auto/${publicId}`;
   } else {
-    // For full-size modal: auto crop whitespace, maintain quality
+    // Full-size modal: f_auto, q_auto, max width 1920px
     return `https://res.cloudinary.com/${cloudName}/image/upload/${trimEffect}f_auto,q_auto,c_limit,w_1920,g_auto/${publicId}`;
   }
 }
 
+// Get blurred placeholder (LQIP) for instant perceived loading
+function getCloudinaryBlurUrl(publicId: string): string {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) return "";
+  // Tiny blurred image: 50px width, heavy blur, low quality - loads instantly
+  return `https://res.cloudinary.com/${cloudName}/image/upload/e_blur:200,q_10,w_50/${publicId}`;
+}
+
+// Optimized Image Card Component - follows all performance rules
+function GalleryImageCard({
+  img,
+  isFirstRow,
+  onImageClick,
+}: {
+  img: {
+    id: string;
+    src: string;
+    fullSrc: string;
+    alt: string;
+    isCloudinary: boolean;
+    publicId?: string;
+    localFallback?: string;
+  };
+  isFirstRow: boolean;
+  onImageClick: (fullSrc: string, layoutId: string) => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  
+  return (
+    <div
+      className="relative aspect-square overflow-hidden rounded-lg border-2 border-border/60 cursor-pointer hover:border-teal-400 transition-colors bg-black/5"
+      onClick={() => onImageClick(img.fullSrc, img.id)}
+    >
+      {img.isCloudinary && img.publicId ? (
+        <>
+          {/* Blurred placeholder (LQIP) - loads instantly */}
+          <img
+            src={getCloudinaryBlurUrl(img.publicId)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl"
+            aria-hidden="true"
+            loading="eager"
+            decoding="async"
+            width={400}
+            height={400}
+          />
+          {/* Full image - fades in after load */}
+          <img
+            src={img.src}
+            alt={img.alt}
+            width={400}
+            height={400}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            loading={isFirstRow ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={isFirstRow ? "high" : "low"}
+            onLoad={() => {
+              // Use requestIdleCallback to avoid blocking main thread
+              if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => setLoaded(true), { timeout: 100 });
+              } else {
+                setTimeout(() => setLoaded(true), 0);
+              }
+            }}
+            onError={(e) => {
+              const target = e.currentTarget;
+              console.error(`❌ Failed to load Cloudinary image: ${img.src}`);
+              
+              if (img.localFallback) {
+                target.src = `/${img.localFallback}`;
+                target.onerror = () => {
+                  target.style.display = 'none';
+                };
+                return;
+              }
+              
+              target.style.display = 'none';
+            }}
+          />
+        </>
+      ) : (
+        <img
+          src={img.src}
+          alt={img.alt}
+          width={400}
+          height={400}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading={isFirstRow ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={isFirstRow ? "high" : "low"}
+          onError={(e) => {
+            console.error(`❌ Failed to load local image: ${img.src}`);
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Hero images for slideshow - using Cloudinary public IDs
+const heroImageIds = [
+  "woodstock-renewal/hero1",
+  "woodstock-renewal/hero2",
+  "woodstock-renewal/hero3",
+  "woodstock-renewal/hero4",
+  "woodstock-renewal/hero5",
+];
+
+// Helper function to get hero image URL from Cloudinary
+function getHeroImageUrl(publicId: string): string {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) {
+    // Fallback to local path if Cloudinary not configured
+    const localPath = publicId.replace('woodstock-renewal/', 'deck_images/');
+    if (localPath.includes('hero4') || localPath.includes('hero5')) {
+      return `/${localPath}.JPG`;
+    }
+    return `/${localPath}.png`;
+  }
+  // Optimized hero image: WebP format, quality 80, max width 1920px for faster loading
+  return `https://res.cloudinary.com/${cloudName}/image/upload/f_webp,q_80,c_limit,w_1920/${publicId}`;
+}
+
 // Fallback local images (used if Cloudinary fails or images are missing)
+// Excludes hero images and fence images - only deck project photos
 const fallbackLocalImages = [
   "deck_images/deckGoldfarb.png",
-  "deck_images/fence1.png",
-  "deck_images/fence2.png",
-  "deck_images/fence3.png",
-  "deck_images/fence4.png",
   "deck_images/IMG_4484.jpeg",
   "deck_images/IMG_4485.jpeg",
   "deck_images/IMG_4487.jpeg",
@@ -82,12 +207,31 @@ const fallbackLocalImages = [
   "deck_images/IMG_6266 2.jpeg",
   "deck_images/IMG_6267 2.jpeg",
   "deck_images/IMG_6268 2.jpeg",
+  "deck_images/image000000.JPG",
+  "deck_images/image000002.JPG",
+  "deck_images/image000004.JPG",
+  "deck_images/IMG_8398.JPG",
+  "deck_images/IMG_8530.png",
+  "deck_images/IMG_8533.png",
+  "deck_images/IMG_8559.png",
+  "deck_images/IMG_8582.png",
+  "deck_images/IMG_8587.png",
+  "deck_images/IMG_8701.png",
+  "deck_images/IMG_8709.png",
+  "deck_images/IMG_8821.png",
+  "deck_images/IMG_8846.png",
+  "deck_images/IMG_8848.png",
+  "deck_images/IMG_8854.png",
+  "deck_images/IMG_8965.png",
+  "deck_images/IMG_8967.png",
 ];
 
 type CloudinaryImage = {
   publicId: string;
-  shortId: string;
   url: string;
+  format?: string;
+  width?: number;
+  height?: number;
 };
 
 export default function ConstructionPage() {
@@ -96,6 +240,53 @@ export default function ConstructionPage() {
   const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
   const [usingCloudinary, setUsingCloudinary] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(0); // Current page in 2x2 slideshow
+  
+  // Preload ONLY current page images (4 max) - no aggressive preloading
+  React.useEffect(() => {
+    if (loadingImages || (!usingCloudinary && cloudinaryImages.length === 0)) return;
+    
+    // Get current page images only
+    let allImages: Array<{ src: string }> = [];
+    if (usingCloudinary && cloudinaryImages.length > 0) {
+      allImages = cloudinaryImages
+        .filter((img) => {
+          const publicId = img.publicId.toLowerCase();
+          return !publicId.includes('hero') && !publicId.includes('fence');
+        })
+        .map((img) => ({
+          src: getCloudinaryUrl(img.publicId, true),
+        }));
+    } else {
+      allImages = fallbackLocalImages
+        .filter((path) => {
+          const p = path.toLowerCase();
+          return !p.includes('hero') && !p.includes('fence');
+        })
+        .map((path) => ({
+          src: `/${path}`,
+        }));
+    }
+    
+    const imagesPerPage = 4;
+    const currentPageImages = allImages.slice(
+      galleryPage * imagesPerPage,
+      (galleryPage + 1) * imagesPerPage
+    );
+    
+    // Preload ONLY current page (4 images max) - no double preloading
+    currentPageImages.forEach((img) => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = img.src;
+      if (!document.querySelector(`link[href="${img.src}"]`)) {
+        document.head.appendChild(link);
+      }
+    });
+  }, [galleryPage, loadingImages, usingCloudinary, cloudinaryImages]);
+
+  // Removed hero image preloading - let them load naturally to avoid blocking
   const form = useForm<ConstructionFormValues>({
     defaultValues: {
       name: "",
@@ -113,6 +304,7 @@ export default function ConstructionPage() {
     async function fetchCloudinaryImages() {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
       if (!cloudName) {
+        console.log("ℹ️ Cloudinary not configured, using local images");
         setLoadingImages(false);
         return;
       }
@@ -125,9 +317,27 @@ export default function ConstructionPage() {
         const data = await response.json();
 
         if (data.success && data.images && data.images.length > 0) {
-          setCloudinaryImages(data.images);
+          // Filter out hero and fence images from Cloudinary list
+          const filteredImages = data.images.filter((img: CloudinaryImage) => {
+            const publicId = img.publicId.toLowerCase();
+            return !publicId.includes('hero') && !publicId.includes('fence');
+          });
+          setCloudinaryImages(filteredImages);
           setUsingCloudinary(true);
-          console.log(`✅ Loaded ${data.images.length} images from Cloudinary`);
+          console.log(`✅ Loaded ${data.images.length} total images from Cloudinary, ${filteredImages.length} after filtering (excluding hero/fence)`);
+          
+          // Preload first 6 gallery images for instant display
+          filteredImages.slice(0, 6).forEach((img, idx) => {
+            const preloadLink = document.createElement('link');
+            preloadLink.rel = 'preload';
+            preloadLink.as = 'image';
+            preloadLink.href = getCloudinaryUrl(img.publicId, true);
+            document.head.appendChild(preloadLink);
+            
+            // Also preload in browser cache
+            const imgElement = new window.Image();
+            imgElement.src = getCloudinaryUrl(img.publicId, true);
+          });
         } else {
           console.log("ℹ️ No images found in Cloudinary, using local fallback");
         }
@@ -166,30 +376,59 @@ export default function ConstructionPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Hero Section */}
+      {/* Hero Section with Carousel */}
       <section className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-[85vh] flex items-center justify-center overflow-hidden">
-        {/* Animated Background Image */}
-        <motion.div 
-          className="absolute inset-0 z-0"
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        >
-          <Image
-            src="/deck_images/deckGoldfarb.png"
-            alt="Custom deck construction"
-            fill
-            className="object-cover"
-            priority
-            quality={90}
-          />
-          <motion.div 
-            className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          />
-        </motion.div>
+        {/* Carousel Background Images */}
+        <div className="absolute inset-0 z-0">
+          {heroImageIds.length > 0 ? (
+            <Carousel autoPlay={true} interval={6000} className="h-full w-full">
+              {heroImageIds.map((publicId, idx) => {
+                const imageUrl = getHeroImageUrl(publicId);
+                return (
+                  <div key={`hero-${idx}-${publicId}`} className="relative w-full h-full" style={{ minHeight: '100vh', width: '100%' }}>
+                    <img
+                      src={imageUrl}
+                      alt={`Custom deck construction ${idx + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ 
+                        minHeight: '100%', 
+                        minWidth: '100%',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                      loading="eager"
+                      decoding="sync"
+                      onLoad={(e) => {
+                        console.log(`✅ Hero image ${idx + 1} loaded successfully from Cloudinary`);
+                      }}
+                      onError={(e) => {
+                        console.error(`❌ Failed to load hero image ${idx + 1} from Cloudinary: ${imageUrl}`);
+                        // Try fallback for first image only
+                        if (idx === 0 && !e.currentTarget.src.includes('deckGoldfarb')) {
+                          console.log('Trying fallback image...');
+                          e.currentTarget.src = '/deck_images/deckGoldfarb.png';
+                        }
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70" />
+                  </div>
+                );
+              })}
+            </Carousel>
+          ) : (
+            <div className="relative w-full h-full">
+              <img
+                src="/deck_images/deckGoldfarb.png"
+                alt="Custom deck construction"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70" />
+            </div>
+          )}
+        </div>
 
         {/* Animated Hero Content */}
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 md:px-8 md:py-20 lg:px-12">
@@ -711,7 +950,7 @@ export default function ConstructionPage() {
             className="mb-6 sm:mb-8 text-center"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ margin: "-100px" }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
@@ -727,77 +966,186 @@ export default function ConstructionPage() {
               <p className="text-muted-foreground">Loading images...</p>
             </div>
           ) : (
-            <motion.div 
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.08,
-                  },
-                },
-              }}
-            >
-              {usingCloudinary && cloudinaryImages.length > 0 ? (
-                // Use Cloudinary images - only show images that exist
-                cloudinaryImages.map((img, idx) => (
-                  <motion.div
-                    key={img.publicId}
-                    layoutId={`image-cloudinary-${img.publicId}`}
-                    className="relative aspect-square overflow-hidden rounded-lg border-2 border-border/60 cursor-pointer hover:border-teal-400 transition-colors bg-black/5"
-                    onClick={() => {
-                      setSelectedImage(getCloudinaryUrl(img.publicId, false));
-                      setSelectedImageId(`image-cloudinary-${img.publicId}`);
-                    }}
-                    variants={{
-                      hidden: { opacity: 0, scale: 0.8 },
-                      visible: { opacity: 1, scale: 1 },
-                    }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <Image
-                      src={getCloudinaryUrl(img.publicId, true)}
-                      alt={`Construction project ${idx + 1}`}
-                      fill
-                      className="object-cover object-center"
-                      loading={idx < 12 ? "eager" : "lazy"}
-                      decoding={idx < 12 ? "sync" : "async"}
-                    />
-                  </motion.div>
-                ))
-              ) : (
-                // Fallback to local images
-                fallbackLocalImages.map((imagePath, idx) => (
-                  <motion.div
-                    key={idx}
-                    layoutId={`image-local-${idx}`}
-                    className="relative aspect-square overflow-hidden rounded-lg border-2 border-border/60 cursor-pointer hover:border-teal-400 transition-colors bg-black/5"
-                    onClick={() => {
-                      setSelectedImage(`/${imagePath}`);
-                      setSelectedImageId(`image-local-${idx}`);
-                    }}
-                    variants={{
-                      hidden: { opacity: 0, scale: 0.8 },
-                      visible: { opacity: 1, scale: 1 },
-                    }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <Image
-                      src={`/${imagePath}`}
-                      alt={`Construction project ${idx + 1}`}
-                      fill
-                      className="object-cover object-center"
-                      loading={idx < 12 ? "eager" : "lazy"}
-                      decoding={idx < 12 ? "sync" : "async"}
-                    />
-                  </motion.div>
-                ))
-              )}
-            </motion.div>
+            <div className="relative">
+              {/* 2x2 Grid Slideshow */}
+              {(() => {
+                // Determine which images to show
+                let allImages: Array<{
+                  id: string;
+                  src: string;
+                  fullSrc: string;
+                  alt: string;
+                  layoutId: string;
+                  isCloudinary: boolean;
+                  publicId?: string;
+                  localFallback?: string;
+                }> = [];
+
+                if (usingCloudinary && cloudinaryImages.length > 0) {
+                  // Use Cloudinary images, filtering out hero and fence images
+                  allImages = cloudinaryImages
+                    .filter((img) => {
+                      const publicId = img.publicId.toLowerCase();
+                      return !publicId.includes('hero') && !publicId.includes('fence');
+                    })
+                    .map((img, idx) => {
+                      // Find local fallback path for this Cloudinary image
+                      const cloudinaryName = img.publicId.replace('woodstock-renewal/', '').toLowerCase();
+                      const localFallback = fallbackLocalImages.find((localPath) => {
+                        const localName = localPath.replace('deck_images/', '').replace(/\.(jpeg|jpg|png|JPG|PNG)$/i, '').toLowerCase();
+                        return localName === cloudinaryName;
+                      });
+
+                      return {
+                        id: `cloudinary-${img.publicId}`,
+                        src: getCloudinaryUrl(img.publicId, true),
+                        fullSrc: getCloudinaryUrl(img.publicId, false),
+                        alt: `Construction project ${idx + 1}`,
+                        layoutId: `image-cloudinary-${img.publicId}`,
+                        isCloudinary: true,
+                        publicId: img.publicId,
+                        localFallback: localFallback,
+                      };
+                    });
+                } else {
+                  // Fall back to local images, filtering out hero and fence images
+                  allImages = fallbackLocalImages
+                    .filter((imagePath) => {
+                      const path = imagePath.toLowerCase();
+                      return !path.includes('hero') && !path.includes('fence');
+                    })
+                    .map((imagePath, idx) => ({
+                      id: `local-${idx}-${imagePath}`,
+                      src: `/${imagePath}`,
+                      fullSrc: `/${imagePath}`,
+                      alt: `Construction project ${idx + 1}`,
+                      layoutId: `image-local-${idx}`,
+                      isCloudinary: false,
+                    }));
+                }
+
+                // Chunk images into groups of 4
+                const imagesPerPage = 4;
+                const totalPages = Math.ceil(allImages.length / imagesPerPage);
+                const currentPageImages = allImages.slice(
+                  galleryPage * imagesPerPage,
+                  (galleryPage + 1) * imagesPerPage
+                );
+
+                return (
+                  <div className="relative">
+                    {/* Simplified grid - no Framer Motion animations to reduce overhead */}
+                    <div
+                      className="grid grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto"
+                      onTouchStart={(e) => {
+                        const touch = e.touches[0];
+                        const startX = touch.clientX;
+                        const startY = touch.clientY;
+                        
+                        const handleTouchEnd = (e: TouchEvent) => {
+                          const touch = e.changedTouches[0];
+                          const endX = touch.clientX;
+                          const endY = touch.clientY;
+                          const diffX = startX - endX;
+                          const diffY = startY - endY;
+                          
+                          // Only trigger if horizontal swipe is greater than vertical
+                          if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                            if (diffX > 0 && galleryPage < totalPages - 1) {
+                              setGalleryPage(galleryPage + 1);
+                            } else if (diffX < 0 && galleryPage > 0) {
+                              setGalleryPage(galleryPage - 1);
+                            }
+                          }
+                          
+                          document.removeEventListener('touchend', handleTouchEnd);
+                        };
+                        
+                        document.addEventListener('touchend', handleTouchEnd, { once: true });
+                      }}
+                    >
+                      {currentPageImages.map((img, idx) => {
+                        const isFirstPage = galleryPage === 0;
+                        const isFirstRow = isFirstPage && idx < 2;
+                        
+                        return (
+                          <GalleryImageCard
+                            key={`${galleryPage}-${img.id}`}
+                            img={img}
+                            isFirstRow={isFirstRow}
+                            onImageClick={(fullSrc, layoutId) => {
+                              setSelectedImage(fullSrc);
+                              setSelectedImageId(layoutId);
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    {totalPages > 1 && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-12 h-10 w-10 rounded-full bg-background/80 hover:bg-background border border-border shadow-lg z-10 transition-opacity"
+                          onClick={() => {
+                            if (galleryPage > 0) {
+                              setGalleryPage(galleryPage - 1);
+                            }
+                          }}
+                          disabled={galleryPage === 0}
+                          aria-label="Previous images"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-12 h-10 w-10 rounded-full bg-background/80 hover:bg-background border border-border shadow-lg z-10 transition-opacity"
+                          onClick={() => {
+                            if (galleryPage < totalPages - 1) {
+                              setGalleryPage(galleryPage + 1);
+                            }
+                          }}
+                          disabled={galleryPage === totalPages - 1}
+                          aria-label="Next images"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Page Indicators */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center gap-2 mt-6">
+                        {Array.from({ length: totalPages }).map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setGalleryPage(idx)}
+                            className={`
+                              h-2 rounded-full transition-all
+                              ${idx === galleryPage 
+                                ? 'w-8 bg-teal-600' 
+                                : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                              }
+                            `}
+                            aria-label={`Go to page ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Page Counter */}
+                    {totalPages > 1 && (
+                      <p className="text-center text-sm text-muted-foreground mt-4">
+                        {galleryPage + 1} of {totalPages}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
           )}
         </section>
 
