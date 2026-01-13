@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Project Proposal | Woodstock Renewal Contracting",
-  description: "Your project proposal from Woodstock Renewal Contracting.",
+  title: "Basement Proposal | Woodstock Renewal Contracting",
+  description:
+    "Your basement renovation proposal. Interactive 3D walkthrough and complete project details.",
 };
 
-export default function ProposalLayout({
+export default function BasementShowcaseLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // This layout intentionally omits the navbar for an immersive 3D experience
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0a0a0b]">
-      {/* Hide the global navbar on proposal pages */}
-      <style>{`
-        nav, header, .navbar, [class*="navbar"], [class*="Navbar"] {
-          display: none !important;
-        }
-      `}</style>
       {children}
       
       {/* Logo / Branding */}
