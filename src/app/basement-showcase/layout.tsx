@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Basement Showcase | 3D Interactive Preview",
+  title: "Basement Proposal | Woodstock Renewal Contracting",
   description:
-    "Explore Sean's basement renovation concept in stunning 3D. Interactive walkthrough of the complete design vision.",
+    "Your basement renovation proposal. Interactive 3D walkthrough and complete project details.",
 };
 
 export default function BasementShowcaseLayout({

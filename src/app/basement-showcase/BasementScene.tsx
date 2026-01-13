@@ -236,7 +236,7 @@ export default function BasementScene() {
             >
               <div className="text-center whitespace-nowrap">
                 <h1 className="text-4xl md:text-5xl font-extralight text-white tracking-[0.1em] mb-3 drop-shadow-lg">
-                  Welcome to Your 3D Model
+                  Welcome to Your Proposal
                 </h1>
                 <p 
                   className="text-amber-500/80 tracking-[0.3em] text-sm uppercase"
