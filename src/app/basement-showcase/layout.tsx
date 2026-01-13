@@ -11,9 +11,15 @@ export default function BasementShowcaseLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // This layout intentionally omits the navbar for an immersive 3D experience
+  // This layout intentionally hides the navbar for an immersive 3D experience
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0a0a0b]">
+      {/* Hide the global navbar on this page */}
+      <style>{`
+        nav, header, .navbar, [class*="navbar"], [class*="Navbar"] {
+          display: none !important;
+        }
+      `}</style>
       {children}
       
       {/* Logo / Branding */}
