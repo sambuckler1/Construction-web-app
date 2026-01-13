@@ -9,8 +9,10 @@ import {
   Html,
   useProgress,
   Center,
+  Sparkles,
 } from "@react-three/drei";
-import { motion, AnimatePresence } from "framer-motion";
+import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
+import { motion } from "framer-motion";
 import * as THREE from "three";
 
 // Preload the model
@@ -79,30 +81,40 @@ function CameraRig({ scrollProgress }: { scrollProgress: number }) {
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
 
   useFrame(() => {
-    // Cap animation at 90% scroll - last 10% is buffer zone where camera holds
-    const cappedProgress = Math.min(scrollProgress / 0.9, 1);
+    // Cap animation at 85% - rest is buffer where camera holds still
+    const cappedProgress = Math.min(scrollProgress / 0.85, 1);
     
-    // Camera orbits 270 degrees around the model as user scrolls
-    // Orbit angle: 0 to 1.5*PI (270 degrees)
-    const angle = cappedProgress * Math.PI * 1.5;
+    let targetX: number, targetY: number, targetZ: number;
     
-    // Distance from center (radius of orbit)
-    const radius = 12 - cappedProgress * 2; // Start at 12, end at 10
-    
-    // Height: start at 4, rise to 8 at the end for top-down view
-    const height = 4 + cappedProgress * 4;
-    
-    // Calculate orbital position
-    const targetX = Math.sin(angle) * radius;
-    const targetZ = Math.cos(angle) * radius;
-    const targetY = height;
+    // Phase 1: 0-55% - 180° orbit around model
+    if (cappedProgress <= 0.55) {
+      const phaseProgress = cappedProgress / 0.55;
+      const angle = phaseProgress * Math.PI; // 0 to 180 degrees
+      const radius = 12;
+      const height = 4 + phaseProgress * 2;
+      
+      targetX = Math.sin(angle) * radius;
+      targetZ = Math.cos(angle) * radius;
+      targetY = height;
+    }
+    // Phase 2: 55-100% - Additional 90° + zoom in (then hold)
+    else {
+      const phaseProgress = (cappedProgress - 0.55) / 0.45;
+      const angle = Math.PI + phaseProgress * (Math.PI / 2); // 180 to 270 degrees
+      const radius = 12 - phaseProgress * 4; // 12 to 8
+      const height = 6 - phaseProgress * 2; // 6 to 4
+      
+      targetX = Math.sin(angle) * radius;
+      targetZ = Math.cos(angle) * radius;
+      targetY = height;
+    }
     
     // Smooth camera movement
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.03);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.03);
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.03);
     
-    // Always look at the center of the model
+    // Always look at center
     lookAtTarget.current.set(0, 0, 0);
     camera.lookAt(lookAtTarget.current);
   });
@@ -121,92 +133,14 @@ function Loader() {
   );
 }
 
-// Content sections that appear as you scroll
-const sections = [
-  {
-    id: 1,
-    title: "THE VISION",
-    subtitle: "Sean's Basement",
-    description:
-      "A complete transformation of underutilized space into a stunning, functional living area.",
-    position: 0,
-  },
-  {
-    id: 2,
-    title: "THE LAYOUT",
-    subtitle: "Thoughtful Design",
-    description:
-      "Maximizing every square foot. Open concept living that flows naturally from space to space.",
-    position: 0.11,
-  },
-  {
-    id: 3,
-    title: "CRAFTSMANSHIP",
-    subtitle: "Premium Quality",
-    description:
-      "Every detail meticulously planned. Every corner thoughtfully designed for your lifestyle.",
-    position: 0.22,
-  },
-  {
-    id: 4,
-    title: "THE STRUCTURE",
-    subtitle: "Solid Foundation",
-    description:
-      "Professional framing, proper insulation, and code-compliant construction throughout.",
-    position: 0.33,
-  },
-  {
-    id: 5,
-    title: "THE DETAILS",
-    subtitle: "Built Right",
-    description:
-      "Quality materials, expert installation, and attention to the details that matter most.",
-    position: 0.44,
-  },
-  {
-    id: 6,
-    title: "MODERN LIVING",
-    subtitle: "Comfort & Style",
-    description:
-      "Seamless integration of lighting, storage, and entertainment. A space that feels like home.",
-    position: 0.55,
-  },
-  {
-    id: 7,
-    title: "FUNCTIONALITY",
-    subtitle: "Smart Spaces",
-    description:
-      "Every room designed with purpose. Flexible areas that adapt to your family's needs.",
-    position: 0.66,
-  },
-  {
-    id: 8,
-    title: "THE FINISH",
-    subtitle: "Polished Perfection",
-    description:
-      "Premium finishes, clean lines, and sophisticated touches that elevate the entire space.",
-    position: 0.77,
-  },
-  {
-    id: 9,
-    title: "YOUR SPACE",
-    subtitle: "Realized",
-    description:
-      "From concept to reality. Let's bring this vision to life together.",
-    position: 0.88,
-  },
-];
+// Easing function: starts fast, slows down at end
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
 
 export default function BasementScene() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeSection, setActiveSection] = useState(0);
-  const [showIntro, setShowIntro] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 2500);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -215,18 +149,11 @@ export default function BasementScene() {
       const scrollTop = window.scrollY;
       const docHeight =
         document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.min(scrollTop / docHeight, 1);
-      setScrollProgress(progress);
-
-      // Determine active section
-      const newSection = sections.findIndex(
-        (s, i) =>
-          progress >= s.position &&
-          (i === sections.length - 1 || progress < sections[i + 1].position)
-      );
-      if (newSection !== -1) {
-        setActiveSection(newSection);
-      }
+      const rawProgress = Math.min(scrollTop / docHeight, 1);
+      
+      // Apply easing: faster at start, slower at end
+      const easedProgress = easeOutCubic(rawProgress);
+      setScrollProgress(easedProgress);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -235,129 +162,54 @@ export default function BasementScene() {
 
   return (
     <>
-      {/* Intro Animation */}
-      <AnimatePresence>
-        {showIntro && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-[#0a0a0b] flex items-center justify-center"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.8 }}
-              className="text-center"
-            >
-              <h1 className="text-6xl md:text-8xl font-extralight text-white tracking-[0.2em] mb-4">
-                BASEMENT
-              </h1>
-              <p className="text-amber-500/60 tracking-[0.5em] text-sm uppercase">
-                Renovation Concept
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Scrollable container */}
       <div ref={containerRef} className="relative">
-        {/* Scroll indicator */}
-        <motion.div
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2"
+        {/* Minimal progress bar - fades in after first scroll */}
+        <motion.div 
+          className="fixed top-0 left-0 w-full h-0.5 bg-white/5 z-50"
           initial={{ opacity: 0 }}
-          animate={{ opacity: scrollProgress < 0.1 ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
+          animate={{ opacity: scrollProgress > 0.05 ? 1 : 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <span className="text-white/40 text-xs tracking-[0.3em] uppercase">
-            Scroll to Explore
-          </span>
-          <motion.div
-            className="w-6 h-10 border border-white/20 rounded-full flex justify-center pt-2"
-            animate={{ y: [0, 5, 0] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-          >
-            <motion.div className="w-1 h-2 bg-amber-500/60 rounded-full" />
-          </motion.div>
-        </motion.div>
-
-        {/* Progress bar */}
-        <div className="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
           <motion.div
             className="h-full bg-gradient-to-r from-amber-600 to-amber-400"
             style={{ width: `${scrollProgress * 100}%` }}
           />
-        </div>
-
-        {/* Navigation dots */}
-        <div className="fixed right-8 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4">
-          {sections.map((section, i) => (
-            <button
-              key={section.id}
-              onClick={() => {
-                const targetScroll =
-                  section.position *
-                  (document.documentElement.scrollHeight - window.innerHeight);
-                window.scrollTo({ top: targetScroll, behavior: "smooth" });
-              }}
-              className="group flex items-center gap-3"
-            >
-              <span
-                className={`text-xs tracking-widest transition-all duration-300 ${
-                  i === activeSection
-                    ? "text-amber-500 opacity-100"
-                    : "text-white/30 opacity-0 group-hover:opacity-100"
-                }`}
-              >
-                {section.title}
-              </span>
-              <div
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  i === activeSection
-                    ? "bg-amber-500 scale-150"
-                    : "bg-white/20 group-hover:bg-white/40"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
+        </motion.div>
 
         {/* Fixed 3D Canvas */}
         <div className="fixed inset-0 bg-[#0a0a0b]">
           <Canvas
             camera={{ position: [0, 4, 12], fov: 50 }}
             shadows
-            gl={{ antialias: true, alpha: true }}
+            gl={{ 
+              antialias: true, 
+              alpha: true,
+              toneMapping: THREE.NoToneMapping, // Preserve original colors
+            }}
+            linear // Use linear color space to keep original material colors
           >
             <fog attach="fog" args={["#0a0a0b", 20, 60]} />
 
-            {/* Lighting - increased for better visibility */}
-            <ambientLight intensity={0.6} />
+            {/* Neutral lighting to show true material colors */}
+            <ambientLight intensity={0.8} color="#ffffff" />
             <directionalLight
               position={[10, 15, 10]}
-              intensity={1.5}
+              intensity={1.2}
+              color="#ffffff"
               castShadow
               shadow-mapSize={2048}
             />
-            <spotLight
-              position={[15, 15, 15]}
-              angle={0.4}
-              penumbra={1}
-              intensity={1.5}
-              castShadow
+            <directionalLight
+              position={[-10, 10, -10]}
+              intensity={0.6}
+              color="#ffffff"
             />
-            <spotLight
-              position={[-15, 10, -15]}
-              angle={0.5}
-              penumbra={1}
-              intensity={0.8}
-              color="#fbbf24"
-            />
-            <pointLight position={[0, 10, 0]} intensity={0.5} color="#fbbf24" />
             {/* Fill light from below */}
-            <pointLight position={[0, -5, 0]} intensity={0.3} color="#ffffff" />
+            <hemisphereLight 
+              args={["#ffffff", "#444444", 0.6]} 
+            />
 
             {/* Grid floor */}
             <gridHelper
@@ -372,6 +224,29 @@ export default function BasementScene() {
               </Center>
             </Suspense>
 
+            {/* Welcome text in 3D space - fades on scroll */}
+            <Html
+              center
+              position={[0, 2, 0]}
+              style={{
+                opacity: Math.max(0, 1 - scrollProgress * 5),
+                transition: 'opacity 0.3s ease-out',
+                pointerEvents: 'none',
+              }}
+            >
+              <div className="text-center whitespace-nowrap">
+                <h1 className="text-4xl md:text-5xl font-extralight text-white tracking-[0.1em] mb-3 drop-shadow-lg">
+                  Welcome to Your 3D Model
+                </h1>
+                <p 
+                  className="text-amber-500/80 tracking-[0.3em] text-sm uppercase"
+                  style={{ animation: 'pulse 2s ease-in-out infinite' }}
+                >
+                  Scroll to explore
+                </p>
+              </div>
+            </Html>
+
             {/* Camera movement based on scroll */}
             <CameraRig scrollProgress={scrollProgress} />
 
@@ -384,8 +259,31 @@ export default function BasementScene() {
               far={10}
             />
 
-            {/* Environment for reflections */}
-            <Environment preset="city" />
+            {/* Environment for subtle reflections - low intensity to preserve material colors */}
+            <Environment preset="warehouse" environmentIntensity={0.3} />
+
+            {/* Floating dust particles for atmosphere */}
+            <Sparkles
+              count={100}
+              scale={20}
+              size={2}
+              speed={0.3}
+              opacity={0.4}
+              color="#ffffff"
+            />
+
+            {/* Post-processing effects */}
+            <EffectComposer>
+              <Bloom
+                luminanceThreshold={0.6}
+                luminanceSmoothing={0.9}
+                intensity={0.4}
+              />
+              <Vignette
+                offset={0.3}
+                darkness={0.6}
+              />
+            </EffectComposer>
 
             {/* Loading indicator */}
             <Loader />
@@ -398,77 +296,36 @@ export default function BasementScene() {
           </div>
         </div>
 
-        {/* Scrollable content sections */}
-        <div className="relative z-30">
-          {sections.map((section, i) => (
-            <section
-              key={section.id}
-              className="min-h-screen flex items-center px-8 md:px-16 lg:px-24"
-            >
-              <motion.div
-                className="max-w-xl"
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                viewport={{ once: false, amount: 0.5 }}
-              >
-                <span className="text-amber-500/60 text-sm tracking-[0.4em] uppercase mb-4 block">
-                  0{i + 1} / 09
-                </span>
-                <h2 className="text-5xl md:text-7xl font-extralight text-white mb-2 tracking-tight">
-                  {section.title}
-                </h2>
-                <h3 className="text-2xl md:text-3xl font-light text-amber-500 mb-6">
-                  {section.subtitle}
-                </h3>
-                <p className="text-white/50 text-lg leading-relaxed max-w-md">
-                  {section.description}
-                </p>
-
-                {i === sections.length - 1 && (
-                  <motion.button
-                    className="mt-10 px-8 py-4 bg-amber-500 text-black font-medium tracking-widest uppercase text-sm hover:bg-amber-400 transition-colors"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      document.getElementById('proposal')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    View Proposal
-                  </motion.button>
-                )}
-              </motion.div>
-            </section>
-          ))}
-
-          {/* Buffer section - camera holds, proposal peeks up */}
-          <div className="h-[80vh] relative flex items-end justify-center pb-16">
+        {/* Long scroll area for 3D animation - 3 "screens" worth of scrolling */}
+        <div className="relative z-30 h-[400vh]" />
+        
+        {/* Buffer with "continue" hint */}
+        <div className="relative z-30 h-[50vh] flex items-end justify-center pb-16">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: false, amount: 0.8 }}
+          >
             <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: false, amount: 0.8 }}
+              animate={{ y: [0, 8, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="flex flex-col items-center gap-2"
             >
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="flex flex-col items-center gap-2"
+              <span className="text-white/30 text-xs tracking-[0.3em] uppercase">
+                Continue for Details
+              </span>
+              <svg 
+                className="w-6 h-6 text-amber-500/60" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
               >
-                <span className="text-white/30 text-xs tracking-[0.3em] uppercase">
-                  Continue for Details
-                </span>
-                <svg 
-                  className="w-6 h-6 text-amber-500/60" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-                </svg>
-              </motion.div>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+              </svg>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -514,37 +371,98 @@ export default function BasementScene() {
               <div className="w-20 h-0.5 bg-amber-500" />
             </motion.div>
 
+            {/* Main scope description */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+              className="mb-12 text-white/60 text-lg leading-relaxed max-w-4xl"
+            >
+              <p>
+                Complete finishing of your <span className="text-white">1,215 sq ft basement (45' × 27')</span> — 
+                including walls covering all concrete surfaces, enclosing the staircase area, 
+                a dedicated 9'×19' storage room, and enclosing the support columns from ceiling 
+                to floor for a clean, finished appearance.
+              </p>
+            </motion.div>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
+                  icon: "🧱",
+                  title: "Insulation",
+                  items: [
+                    "1-inch insulation boards all around",
+                    "Attached to concrete with adhesive",
+                    "R-value of 5 (code compliant)"
+                  ],
+                },
+                {
                   icon: "🏗️",
                   title: "Framing",
-                  items: ["Wall framing per design", "Header installation", "Blocking for fixtures", "Sound insulation framing"],
-                },
-                {
-                  icon: "⚡",
-                  title: "Electrical",
-                  items: ["Recessed lighting layout", "Outlet installation", "Switch wiring", "Panel connection"],
-                },
-                {
-                  icon: "🔧",
-                  title: "Plumbing",
-                  items: ["Bathroom rough-in", "Drain connections", "Water supply lines", "Fixture prep"],
-                },
-                {
-                  icon: "🌡️",
-                  title: "HVAC",
-                  items: ["Ductwork extension", "Vent installation", "Return air setup", "Thermostat wiring"],
+                  items: [
+                    "2×4 kiln-dried studs",
+                    "Pressure treated bottom plate",
+                    "Anchored to concrete floor",
+                    "Column enclosures included"
+                  ],
                 },
                 {
                   icon: "🎨",
-                  title: "Drywall & Finish",
-                  items: ["Full drywall installation", "Taping & mudding", "Texture matching", "Prime & paint ready"],
+                  title: "Drywall",
+                  items: [
+                    "½\" moisture resistant drywall",
+                    "Upgrade to purple mold-resistant available",
+                    "Professional taping and mudding",
+                    "Corner beads throughout"
+                  ],
+                },
+                {
+                  icon: "🔲",
+                  title: "Ceiling",
+                  items: [
+                    "Drop ceiling installation",
+                    "Premium grid system",
+                    "2×2 ceiling tiles"
+                  ],
+                },
+                {
+                  icon: "🪵",
+                  title: "Flooring",
+                  items: [
+                    "Laminate flooring installation",
+                    "Underlayment included",
+                    "Medium-tier quality (~$2/sqft material)",
+                    "Color selection available"
+                  ],
                 },
                 {
                   icon: "🚪",
-                  title: "Trim & Details",
-                  items: ["Door frames & casings", "Baseboards", "Crown molding", "Window trim"],
+                  title: "Storage & Doors",
+                  items: [
+                    "9' × 19' storage room with door",
+                    "Under-staircase storage with door",
+                    "Door framing and casings included"
+                  ],
+                },
+                {
+                  icon: "🔨",
+                  title: "Trim & Baseboards",
+                  items: [
+                    "5.5\" wide baseboards throughout",
+                    "Optional shoe molding available",
+                    "Professional finishing"
+                  ],
+                },
+                {
+                  icon: "🎨",
+                  title: "Painting",
+                  items: [
+                    "Labor for painting included",
+                    "Any color of your choice",
+                    "Walls and trim"
+                  ],
                 },
               ].map((scope, i) => (
                 <motion.div
@@ -567,6 +485,96 @@ export default function BasementScene() {
                       </li>
                     ))}
                   </ul>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Materials Section */}
+        <section className="py-16 px-8 md:px-16 lg:px-24">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="mb-12"
+            >
+              <h3 className="text-3xl md:text-4xl font-light text-white mb-2">
+                Materials
+              </h3>
+              <div className="w-20 h-0.5 bg-amber-500" />
+            </motion.div>
+
+            <div className="space-y-1">
+              {[
+                {
+                  image: "/models/basement-materials/insulation_board.png",
+                  title: "Insulation Board",
+                  description: "1\" rigid foam insulation placed between concrete and 2×4 framing. Attached with adhesive. Provides R-value of 5 (code compliant)."
+                },
+                {
+                  image: "/models/basement-materials/framing_board.png",
+                  title: "Framing Lumber",
+                  description: "Kiln-dried 2×4 studs for framing out all walls. Pressure-treated bottom plates anchored to concrete. Installed by our experienced framing crew."
+                },
+                {
+                  image: "/models/basement-materials/drywall_board.png",
+                  title: "Drywall",
+                  description: "Moisture resistant ½\" 4×8 sheets of drywall mounted on 2×4 framing. Professionally taped and mudded with corner beads. Upgrade to purple mold-resistant board available."
+                },
+                {
+                  image: "/models/basement-materials/drop_ceiling.png",
+                  title: "Drop Ceiling",
+                  description: "Premium drop ceiling system with clean grid lines. This example shows the quality level we install — modern, professional appearance with easy access to utilities above."
+                },
+                {
+                  image: "/models/basement-materials/flooring.png",
+                  title: "Flooring Options",
+                  description: "Quality laminate flooring options at medium-tier pricing (~$2/sqft material cost). Various colors and styles available — we recommend researching preferences before selection."
+                },
+                {
+                  image: "/models/basement-materials/trim.png",
+                  title: "Baseboards",
+                  description: "5.5\" wide square-profile baseboards throughout all finished spaces. Optional shoe molding can be added for extra dimension and a more refined look."
+                },
+                {
+                  image: "/models/basement-materials/door.png",
+                  title: "Storage Room Doors",
+                  description: "Standard interior doors for both storage rooms — the main 9'×19' storage and the under-staircase storage. Includes framing, casings, and hardware."
+                },
+              ].map((material, i) => (
+                <motion.div
+                  key={material.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.05 }}
+                  viewport={{ once: true }}
+                  className={`flex flex-col md:flex-row gap-8 items-center py-10 ${
+                    i !== 0 ? "border-t border-white/5" : ""
+                  } ${i % 2 === 1 ? "md:flex-row-reverse" : ""}`}
+                >
+                  {/* Image */}
+                  <div className="w-full md:w-2/5 flex-shrink-0">
+                    <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5">
+                      <img
+                        src={material.image}
+                        alt={material.title}
+                        className="w-full h-full object-contain p-4"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="w-full md:w-3/5">
+                    <h4 className="text-2xl font-light text-white mb-4">
+                      {material.title}
+                    </h4>
+                    <p className="text-white/50 leading-relaxed">
+                      {material.description}
+                    </p>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -604,17 +612,19 @@ export default function BasementScene() {
                   </h4>
                   <div className="space-y-4">
                     {[
-                      { item: "Framing & Structure", price: "$X,XXX" },
-                      { item: "Electrical Work", price: "$X,XXX" },
-                      { item: "Plumbing Rough-in", price: "$X,XXX" },
-                      { item: "HVAC Extension", price: "$X,XXX" },
-                      { item: "Drywall & Finishing", price: "$X,XXX" },
-                      { item: "Trim & Millwork", price: "$X,XXX" },
-                      { item: "Permits & Inspections", price: "$XXX" },
+                      { item: "Insulation, Framing & Drywall", price: "$16,665" },
+                      { item: "Drop Ceiling (2×2 tiles)", price: "$11,638" },
+                      { item: "Flooring & Underlayment", price: "$8,000" },
+                      { item: "Painting (labor)", price: "$4,835" },
+                      { item: "HVAC Soffits / Ceiling Obstructions", price: "$2,500" },
+                      { item: "Baseboards", price: "$2,169" },
+                      { item: "Dumpsters & Junk Removal", price: "$2,000" },
+                      { item: "Doors (framing, casings, install)", price: "$850" },
+                      { item: "Permits & Fees", price: "$350" },
                     ].map((line) => (
-                      <div key={line.item} className="flex justify-between items-center py-2 border-b border-white/10">
+                      <div key={line.item} className="flex justify-between items-center py-3 border-b border-white/10">
                         <span className="text-white/70">{line.item}</span>
-                        <span className="text-white font-light">{line.price}</span>
+                        <span className="text-white font-light tabular-nums">{line.price}</span>
                       </div>
                     ))}
                   </div>
@@ -626,26 +636,41 @@ export default function BasementScene() {
                     Total Investment
                   </span>
                   <div className="text-6xl md:text-7xl font-extralight text-white mb-2">
-                    $XX,XXX
+                    $49,007
                   </div>
-                  <p className="text-white/40 text-sm mb-8">
-                    *Final pricing subject to material selections
-                  </p>
+                  <div className="text-white/40 text-sm mb-1">
+                    1,215 sq ft (45' × 27')
+                  </div>
+                  <div className="text-amber-500/70 text-sm mb-6">
+                    ~$40/sq ft
+                  </div>
                   <div className="space-y-3 w-full max-w-xs">
                     <div className="flex items-center gap-3 text-white/60 text-sm">
                       <span className="text-amber-500">✓</span>
-                      50% deposit to start
+                      50% deposit to start — $24,504
                     </div>
                     <div className="flex items-center gap-3 text-white/60 text-sm">
                       <span className="text-amber-500">✓</span>
-                      25% at rough-in complete
+                      25% at rough-in complete — $12,252
                     </div>
                     <div className="flex items-center gap-3 text-white/60 text-sm">
                       <span className="text-amber-500">✓</span>
-                      25% upon completion
+                      25% upon completion — $12,251
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Fine Print */}
+              <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+                <p className="text-white/30 text-xs">
+                  ⚠️ Price assumes slab is flat within manufacturer tolerance and free of moisture issues. 
+                  Any leveling, grinding, or mitigation is additional.
+                </p>
+                <p className="text-white/30 text-xs">
+                  Price includes standard fire-blocking required for inspection approval. 
+                  Any non-standard or upgraded fireproofing required by inspector is subject to change order.
+                </p>
               </div>
             </motion.div>
           </div>
@@ -672,10 +697,13 @@ export default function BasementScene() {
               <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-white/10" />
 
               {[
-                { week: "Week 1-2", title: "Framing & Rough-In", desc: "Wall framing, electrical rough-in, plumbing prep" },
-                { week: "Week 3", title: "HVAC & Inspections", desc: "Ductwork installation, rough-in inspections" },
-                { week: "Week 4-5", title: "Drywall", desc: "Hanging, taping, mudding, and sanding" },
-                { week: "Week 6", title: "Finishing Touches", desc: "Trim, paint prep, final details" },
+                { week: "Week 0-1", title: "Prep Work", desc: "Submit drawings, prep basement, organize material logistics" },
+                { week: "Week 1-2", title: "Framing", desc: "Complete framing with 2×4 studs, insulation installation, column enclosures" },
+                { week: "Pause", title: "Inspections & Electrical", desc: "Wait for framing inspections, coordinate electrical work by your electrician" },
+                { week: "Week 2-3", title: "Drywall", desc: "Drywall installation, taping, mudding, ceiling prep" },
+                { week: "Week 3-4", title: "Ceiling", desc: "Drop ceiling grid and tile installation" },
+                { week: "Week 4-5", title: "Flooring & Baseboards", desc: "Laminate flooring installation, baseboard trim throughout" },
+                { week: "Week 5-6", title: "Painting & Final Touches", desc: "Painting walls and trim, final cleanup and walkthrough" },
               ].map((phase, i) => (
                 <motion.div
                   key={phase.week}
@@ -721,13 +749,19 @@ export default function BasementScene() {
                 </h4>
                 <ul className="space-y-3">
                   {[
-                    "All labor and installation",
-                    "Material delivery & handling",
-                    "Permit acquisition",
-                    "All required inspections",
-                    "Daily cleanup",
-                    "2-year workmanship warranty",
-                    "Project management",
+                    "All labor for framing, insulation & drywall",
+                    "1\" insulation board installation",
+                    "2×4 framing with PT bottom plates",
+                    "½\" moisture resistant drywall",
+                    "Professional taping & mudding",
+                    "Drop ceiling (grid system & tiles)",
+                    "Laminate flooring with underlayment",
+                    "5.5\" baseboards throughout",
+                    "Two storage room doors with framing & casings",
+                    "Column enclosures",
+                    "Painting labor",
+                    "Dumpsters & junk removal",
+                    "Permits & inspection fees",
                   ].map((item) => (
                     <li key={item} className="text-white/60 flex items-start gap-3">
                       <span className="text-green-500">•</span>
@@ -750,12 +784,16 @@ export default function BasementScene() {
                 </h4>
                 <ul className="space-y-3">
                   {[
-                    "Flooring installation",
-                    "Bathroom fixtures",
-                    "Paint & primer",
-                    "Light fixtures",
-                    "Furniture & decor",
-                    "Window treatments",
+                    "Storage room finishing — rooms will be framed only (no flooring or drywall). OSB plywood or full finish available via change order.",
+                    "Slab leveling, grinding, or moisture mitigation — price assumes slab is flat within manufacturer tolerance and free of moisture issues.",
+                    "Fixtures (outlets, outlet covers, lighting caps) — materials",
+                    "Dehumidifier — materials (TBD)",
+                    "Paint & primer — materials",
+                    "Mold remediation",
+                    "HVAC modifications or ducting",
+                    "Plumbing work of any kind",
+                    "Fire suppression / sprinkler work",
+                    "Asbestos or hazardous material removal",
                   ].map((item) => (
                     <li key={item} className="text-white/40 flex items-start gap-3">
                       <span className="text-white/20">•</span>
@@ -765,6 +803,46 @@ export default function BasementScene() {
                 </ul>
               </motion.div>
             </div>
+
+            {/* Warranty Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="mt-8 bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/30 rounded-xl p-8"
+            >
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">🛡️</div>
+                <div className="flex-1">
+                  <h4 className="text-xl font-medium text-amber-400 mb-3">
+                    1-Year Workmanship Warranty
+                  </h4>
+                  <p className="text-white/60 leading-relaxed mb-4">
+                    We stand behind our work. All labor and installation performed under this contract 
+                    is warranted against defects in workmanship for a period of <span className="text-white">one (1) year</span> from 
+                    the date of project completion.
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-white/50">
+                      <span className="text-amber-500 font-medium">Covered:</span> Defects in workmanship including 
+                      drywall cracks from improper installation, nail pops, loose trim, flooring installation issues, 
+                      ceiling grid problems, and door adjustments.
+                    </p>
+                    <p className="text-white/40">
+                      <span className="text-white/50 font-medium">Not covered:</span> Normal settling, hairline cracks 
+                      due to house movement, damage caused by water intrusion or moisture not present at time of install, 
+                      alterations made by others, damage from improper use, or issues arising from work performed outside 
+                      this scope (e.g., electrical, plumbing, HVAC).
+                    </p>
+                  </div>
+                  <p className="text-white/30 text-xs mt-4 italic">
+                    Warranty claims must be submitted in writing within the warranty period. We will inspect and repair 
+                    qualifying issues at no additional cost within a reasonable timeframe.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
@@ -780,27 +858,12 @@ export default function BasementScene() {
             <h2 className="text-4xl md:text-5xl font-extralight text-white mb-6">
               Ready to Transform Your Space?
             </h2>
-            <p className="text-white/50 text-lg mb-10 max-w-2xl mx-auto">
-              Let's discuss the details and get your project started. We're excited to bring this vision to life.
+            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+              Let's discuss the details and get your project started.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.a
-                href="tel:+1234567890"
-                className="px-10 py-4 bg-amber-500 text-black font-medium tracking-widest uppercase text-sm hover:bg-amber-400 transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Call Now
-              </motion.a>
-              <motion.a
-                href="mailto:info@example.com"
-                className="px-10 py-4 border border-white/20 text-white font-medium tracking-widest uppercase text-sm hover:border-amber-500 hover:text-amber-500 transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Email Us
-              </motion.a>
-            </div>
+            <p className="text-amber-500 text-xl mt-6 tracking-wide">
+              Text or call Sam
+            </p>
           </motion.div>
         </section>
 
@@ -808,7 +871,7 @@ export default function BasementScene() {
         <footer className="py-8 px-8 border-t border-white/10">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/30 text-sm">
-              © 2024 Woodstock Renewal Contracting. All rights reserved.
+              © 2026 Woodstock Renewal Contracting. All rights reserved.
             </p>
             <p className="text-white/30 text-sm">
               Proposal valid for 30 days
@@ -817,29 +880,6 @@ export default function BasementScene() {
         </footer>
       </div>
 
-      {/* Info Panel */}
-      <motion.div
-        className="fixed bottom-8 right-8 z-40 hidden md:block"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 3 }}
-      >
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-5 space-y-4">
-          <div>
-            <span className="text-amber-500 text-2xl font-light">360°</span>
-            <p className="text-white/40 text-xs tracking-widest uppercase">
-              Interactive View
-            </p>
-          </div>
-          <div className="w-full h-px bg-white/10" />
-          <div>
-            <span className="text-amber-500 text-2xl font-light">3D</span>
-            <p className="text-white/40 text-xs tracking-widest uppercase">
-              Model Preview
-            </p>
-          </div>
-        </div>
-      </motion.div>
     </>
   );
 }

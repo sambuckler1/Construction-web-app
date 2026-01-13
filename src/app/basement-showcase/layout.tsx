@@ -16,6 +16,24 @@ export default function BasementShowcaseLayout({
     <div className="min-h-screen overflow-x-hidden bg-[#0a0a0b]">
       {children}
       
+      {/* Logo / Branding */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <div className="text-right">
+          <div className="text-white font-light tracking-[0.15em] text-sm">
+            WOODSTOCK
+          </div>
+          <div className="text-amber-500/80 text-[10px] tracking-[0.2em] uppercase">
+            Renewal Contracting
+          </div>
+        </div>
+        <div className="w-px h-8 bg-white/20" />
+        <img 
+          src="/favicon.ico" 
+          alt="Logo" 
+          className="w-8 h-8 opacity-90"
+        />
+      </div>
+      
       {/* Back button to main site */}
       <a
         href="/"
