@@ -17,6 +17,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
+import { useState, Suspense, useRef, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF, Environment, useProgress, Html } from "@react-three/drei";
+import * as THREE from "three";
+
+// Preload the model
+useGLTF.preload("/models/goldfarb.glb");
 
 type ConstructionFormValues = {
   name: string;
@@ -28,7 +36,116 @@ type ConstructionFormValues = {
   message: string;
 };
 
+// 3D Model Component
+function DeckModel() {
+  const { scene } = useGLTF("/models/goldfarb.glb");
+  const modelRef = useRef<THREE.Group>(null);
+  const pivotRef = useRef<THREE.Group>(null);
+  const [scale, setScale] = useState(1);
+
+  // ============================================
+  // ROTATION CENTER - Set these from SketchUp measurements
+  // ============================================
+  // In SketchUp, find your desired rotation point and measure:
+  // - X: feet left/right from origin (positive = right, negative = left)
+  // - Y: feet up/down from origin (positive = up, negative = down)  
+  // - Z: feet forward/back from origin (positive = forward, negative = back)
+  // ============================================
+  const rotationCenter = useMemo(() => {
+    return new THREE.Vector3(
+      -126,  // X: Replace with your SketchUp X measurement (in feet) This is measurement left and right
+      100,  // Y: Replace with your SketchUp Y measurement (in feet) up and down
+      350   // Z: Replace with your SketchUp Z measurement (in feet) forward and back
+    );
+  }, []);
+
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone();
+    
+    // Calculate bounding box to determine proper scale
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    
+    // Target size of about 6 units
+    const targetSize = 6;
+    const calculatedScale = targetSize / maxDim;
+    setScale(calculatedScale);
+    
+    // Get the bounding box center
+    const boxCenter = box.getCenter(new THREE.Vector3());
+    
+    // Offset the model so the rotation center aligns with origin
+    // This makes the model rotate around your specified point
+    const offset = boxCenter.clone().sub(rotationCenter);
+    clone.position.sub(offset);
+    
+    // Traverse and ensure materials are visible
+    clone.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((mat) => {
+          mat.side = THREE.DoubleSide;
+          mat.needsUpdate = true;
+        });
+      }
+    });
+    
+    return clone;
+  }, [scene, rotationCenter]);
+
+  useFrame((state) => {
+    if (pivotRef.current) {
+      // Oscillating rotation: 0 to 180 degrees and back
+      // Adjust the 0.2 value to change speed (lower = slower)
+      // Adjust the Math.PI multiplier to change range (Math.PI = 180 degrees)
+      // Negative sign makes it start rotating counter-clockwise (negative direction)
+      pivotRef.current.rotation.y = -Math.abs(Math.sin(state.clock.elapsedTime * 0.15)) * Math.PI;
+    }
+    if (modelRef.current) {
+      // Subtle floating animation
+      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
+    }
+  });
+
+  return (
+    <group ref={pivotRef}>
+      <group ref={modelRef} scale={scale} dispose={null}>
+        <primitive object={clonedScene} />
+      </group>
+    </group>
+  );
+}
+
+function ModelLoader() {
+  const { progress } = useProgress();
+  return (
+    <Html center>
+      <div className="text-teal-500 font-light tracking-widest text-sm">
+        {progress.toFixed(0)}%
+      </div>
+    </Html>
+  );
+}
+
 export default function ConstructionPage() {
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
+  
+  const toggleProject = (idx: number) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+
   const form = useForm<ConstructionFormValues>({
     defaultValues: {
       name: "",
@@ -176,209 +293,196 @@ export default function ConstructionPage() {
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-              Our Services
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl mb-4">
+              What We Do
             </h2>
-            <p className="mt-3 sm:mt-4 max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground px-4">
-              We specialize in premium, custom outdoor construction — especially decks — and we do it better than anyone else nearby.
+            <p className="max-w-3xl mx-auto text-base sm:text-lg text-foreground px-4 leading-relaxed">
+              We design and build custom residential projects—from outdoor structures to full interior renovations—managing every phase from concept to completion.
             </p>
           </motion.div>
 
-          {/* Featured Deck Specialties */}
-          <motion.div
-            className="mb-12 sm:mb-16"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            <div className="mb-6">
-              <h3 className="text-xl sm:text-2xl font-bold mb-2">Featured Deck Specialties</h3>
-              <p className="text-sm text-muted-foreground">Premium materials and custom craftsmanship</p>
-            </div>
-            
-            <div className="bg-neutral-950 rounded-2xl p-6 sm:p-8 border border-neutral-800">
-              <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-50px" }}
-                variants={{
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.08,
-                    },
-                  },
-                }}
-              >
-                {[
-                  { 
-                    badge: "Premium Composite", 
-                    badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-                    title: "Trex® & TimberTech® Decks", 
-                    desc: "Low-maintenance, high-end composite decks built to last decades — custom designed for your space, not cookie-cutter layouts." 
-                  },
-                  { 
-                    badge: "Craftsmanship", 
-                    badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-                    title: "Custom Board Designs", 
-                    desc: "Picture framing, breaker boards, herringbone accents, and unique layouts that separate premium decks from average ones." 
-                  },
-                  { 
-                    badge: "Modern Design", 
-                    badgeColor: "bg-sky-500/20 text-sky-400 border-sky-500/30",
-                    title: "Cable & Custom Rail Systems", 
-                    desc: "Clean sightlines with stainless cable railings, aluminum systems, and custom installs tailored to your deck design." 
-                  },
-                  { 
-                    badge: "Night Aesthetic", 
-                    badgeColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-                    title: "Integrated Deck Lighting", 
-                    desc: "Post caps, stair lighting, and under-rail LEDs for safety, ambiance, and serious nighttime presence." 
-                  },
-                  { 
-                    badge: "Exotic Hardwoods", 
-                    badgeColor: "bg-orange-700/20 text-orange-400 border-orange-700/30",
-                    title: "Hardwood Decking", 
-                    desc: "Ipe, Cumaru, and exotic hardwoods for unmatched durability and natural beauty that ages beautifully." 
-                  },
-                  { 
-                    badge: "Value Builds", 
-                    badgeColor: "bg-neutral-700/20 text-neutral-300 border-neutral-700/30",
-                    title: "Pressure-Treated Builds", 
-                    desc: "Pine, structural framing, and value builds that deliver quality construction at accessible price points." 
-                  },
-                ].map((specialty, idx) => (
-                  <motion.div
-                    key={idx}
-                    variants={{
-                      hidden: { opacity: 0, y: 24 },
-                      visible: { opacity: 1, y: 0 },
-                    }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <motion.div
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                      <Card className="bg-neutral-900 border-neutral-800 rounded-2xl min-h-[280px] flex flex-col hover:border-neutral-700 transition-all cursor-pointer shadow-lg hover:shadow-2xl">
-                        <CardContent className="p-6 flex flex-col flex-1">
-                          <div className="mb-4">
-                            <Badge variant="outline" className={`${specialty.badgeColor} border`}>
-                              {specialty.badge}
-                            </Badge>
-                          </div>
-                          <h4 className="text-lg sm:text-xl font-bold text-neutral-100 mb-3">
-                            {specialty.title}
-                          </h4>
-                          <p className="text-sm text-neutral-300 leading-relaxed flex-1 mb-4">
-                            {specialty.desc}
-                          </p>
-                          <span className="text-xs text-teal-400 font-medium">View examples →</span>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </motion.div>
-                ))}
-              </motion.div>
-
-              {/* Trust Strip */}
-              <motion.div
-                className="mt-8 pt-6 border-t border-neutral-800"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-teal-500/10 text-teal-400 border-teal-500/30">
-                      Trex Certified Installer
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-neutral-800/50 text-neutral-300 border-neutral-700">
-                      Custom Built — No Prefab Kits
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-neutral-800/50 text-neutral-300 border-neutral-700">
-                      Fully Insured & Local
-                    </Badge>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-
-          {/* Divider */}
-          <Separator className="my-8 sm:my-12" />
-
-          {/* Other Services - Secondary Grid */}
+          {/* Service Categories */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
+            className="max-w-4xl mx-auto"
           >
-            <div className="mb-6">
-              <h3 className="text-lg sm:text-xl font-semibold mb-2 text-muted-foreground">Other Services</h3>
-            </div>
-            <motion.div
-              className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.05,
-                  },
-                },
-              }}
-            >
+            <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
               {[
-                { title: "Fence Installation", desc: "Privacy, security, and aesthetic fencing solutions" },
-                { title: "General Construction", desc: "Home renovations, additions, and construction projects" },
-                { title: "Consultation & Design", desc: "Expert advice and custom design services" },
-                { title: "Maintenance & Repairs", desc: "Ongoing maintenance and repair services" },
-              ].map((service, idx) => (
+                {
+                  title: "Custom Deck & Outdoor Construction",
+                  desc: "Thoughtfully built composite and hardwood decks, railings, stairs, and exterior structures.",
+                },
+                {
+                  title: "Fence & Property Structures",
+                  desc: "Custom fencing, gates, and site-built outdoor features.",
+                },
+                {
+                  title: "Basement Refinishing & Interior Builds",
+                  desc: "Full basement renovations, structural upgrades, and interior construction.",
+                },
+                {
+                  title: "Ground-Up Project Management",
+                  desc: "Design coordination, architecture, engineering, permitting, and full construction oversight.",
+                },
+              ].map((service, idx) => {
+                // Add teal accent to key words
+                const renderDescription = (text: string) => {
+                  const words = text.split(' ');
+                  return words.map((word, i) => {
+                    const cleanWord = word.replace(/[.,]/g, '');
+                    const punctuation = word.replace(cleanWord, '');
+                    // Add teal accent to key premium words
+                    const accentWords = ['Thoughtfully', 'Custom', 'Full', 'Design'];
+                    if (accentWords.includes(cleanWord)) {
+                      return (
+                        <span key={i}>
+                          <span style={{ color: '#14b8a6' }}>{cleanWord}</span>
+                          {punctuation}
+                          {i < words.length - 1 ? ' ' : ''}
+                        </span>
+                      );
+                    }
+                    return <span key={i}>{word}{i < words.length - 1 ? ' ' : ''}</span>;
+                  });
+                };
+                
+                return (
                 <motion.div
                   key={idx}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0 },
-                  }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
                 >
-                  <Card className="border border-border/40 bg-card/50 shadow-sm">
-                    <CardContent className="p-4 sm:p-5">
-                      <h3 className="font-semibold text-foreground text-sm sm:text-base">{service.title}</h3>
-                      <p className="mt-2 text-xs sm:text-sm text-muted-foreground">{service.desc}</p>
+                  <Card 
+                    className="h-full transition-all duration-300 cursor-pointer"
+                    style={{
+                      backgroundColor: '#141414',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1A1A1A';
+                      e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#141414';
+                      e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <h3 className="font-semibold text-lg sm:text-xl mb-2" style={{ color: '#ffffff' }}>
+                        {service.title}
+                      </h3>
+                      <p className="text-sm sm:text-base leading-relaxed" style={{ color: '#b5b5b5' }}>
+                        {renderDescription(service.desc)}
+                      </p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
+                );
+              })}
+            </div>
 
-          {/* CTA Block */}
+            {/* Quiet line at bottom */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-8 sm:mt-10 text-center text-xs sm:text-sm text-muted-foreground/70 max-w-2xl mx-auto px-4"
+            >
+              We act as a single point of contact—coordinating design, engineering, permitting, and construction to deliver complete, well-executed projects.
+            </motion.p>
+          </motion.div>
+        </section>
+
+        {/* Design Before We Build - 3D Model Section */}
+        <section className="mb-12 sm:mb-16 md:mb-20 py-12 sm:py-16">
           <motion.div
-            className="mt-12 sm:mt-16 text-center"
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
+            className="mb-8 sm:mb-12 text-center"
           >
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl mb-3">
+              Design Before We Build
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
+              Explore how materials, layout, and details come together before construction begins.
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            {/* Left: 3D Model */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="relative aspect-square rounded-xl overflow-hidden border-2 border-border/40 shadow-lg bg-neutral-900"
+            >
+              <Canvas
+                camera={{ position: [0, 5, 10], fov: 40 }}
+                shadows
+                gl={{ antialias: true, alpha: true }}
+              >
+                <ambientLight intensity={0.6} />
+                <directionalLight
+                  position={[10, 15, 10]}
+                  intensity={1}
+                  castShadow
+                  shadow-mapSize={2048}
+                />
+                <directionalLight position={[-10, 10, -10]} intensity={0.4} />
+                <hemisphereLight args={["#ffffff", "#444444", 0.5]} />
+                
+                <Suspense fallback={<ModelLoader />}>
+                  <DeckModel />
+                </Suspense>
+                
+                <Environment preset="warehouse" environmentIntensity={0.4} />
+              </Canvas>
+            </motion.div>
+
+            {/* Right: Copy */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+              className="space-y-6"
+            >
+              <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                Every deck we build starts with thoughtful planning. Our design process allows clients to visualize layout, materials, railings, and elevations before construction begins—ensuring clarity, confidence, and a better final result.
+              </p>
+              
+              <ul className="space-y-3">
+                {[
+                  "Board orientation & spacing",
+                  "Railing and stair options",
+                  "Elevation and structural layout",
+                  "Material combinations",
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3">
+                    <span className="text-teal-500 mt-1">•</span>
+                    <span className="text-muted-foreground text-sm sm:text-base">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
               <motion.div
-                whileHover={{ scale: 1.03 }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <Button
                   size="lg"
-                  className="rounded-full bg-teal-600 px-8 py-6 text-base font-semibold shadow-lg shadow-teal-900/50 transition-all hover:bg-teal-700 hover:shadow-xl hover:shadow-teal-900/60"
+                  className="rounded-full bg-teal-600 px-8 py-6 text-base font-semibold shadow-lg shadow-teal-900/50 transition-all hover:bg-teal-700 hover:shadow-xl hover:shadow-teal-900/60 w-full sm:w-auto"
                   onClick={() =>
                     document
                       .getElementById("inquiry")
@@ -388,26 +492,8 @@ export default function ConstructionPage() {
                   Design Your Deck
                 </Button>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-full border-2 border-teal-600/50 px-8 py-6 text-base font-semibold hover:border-teal-600 hover:bg-teal-600/10"
-                  onClick={() =>
-                    document
-                      .getElementById("gallery")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                >
-                  See Past Builds
-                </Button>
-              </motion.div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </section>
 
         {/* Project Inquiry Form */}
@@ -610,64 +696,74 @@ export default function ConstructionPage() {
             </p>
           </motion.div>
           
-          <div className="space-y-16 sm:space-y-20">
+          <div className="space-y-8 sm:space-y-16 md:space-y-20">
             {[
               {
                 image: "/deck_images/project1.jpeg",
+                location: "Woodstock, NY",
                 title: "Black Locust Hardwood Deck with Cable Rails",
                 description: "The client's goal was a timeless, natural hardwood deck with clean sightlines and long-term durability. We built this deck using Black Locust hardwood paired with Cable Bullet cable railing for a seamless, modern look.",
                 details: "Spanning over half a mile of decking, this project featured wide hardwood cocktail rails, minimalist cable splitters, integrated LED lighting, full picture framing, and a complete hidden fastener system—resulting in a refined, high-end finish that will age beautifully over time.",
               },
               {
                 image: "/deck_images/project2.png",
+                location: "Kingston, NY",
                 title: "Composite Deck Rebuild with Diagonal Board Design",
                 description: "This homeowner wanted to completely replace a poorly installed composite deck and make the new space feel truly custom. Rather than replicating the original layout, we introduced a diagonal board pattern to highlight craftsmanship and elevate the overall design.",
                 details: "Built with TimberTech composite decking, fully picture-framed, and paired with composite railings featuring black balusters for a nearly invisible look, this deck is entirely maintenance-free. Materials include TimberTech Coconut Husk decking, Trex composite railings, and Trex white PVC fascia.",
               },
               {
                 image: "/deck_images/project3.JPG",
+                location: "Woodstock, NY",
                 title: "Trex Enhance Deck Upgrade with Modern Cable Rail",
                 description: "With a solid existing frame in place, this project focused on upgrading the deck surface and railings for a fresh, modern look. We installed Trex Foggy Wharf decking from the Enhance Naturals line for a durable, low-maintenance finish.",
                 details: "To complement the design, cable railing was installed through black-stained wood posts and capped with a Trex cocktail rail, preventing water damage while providing a functional and elegant top rail. Finished with Trex white PVC fascia throughout.",
               },
               {
                 image: "/deck_images/project4.png",
+                location: "Woodstock, NY",
                 title: "Woodstock-Inspired Composite Deck with Wood Handrails",
                 description: "The client wanted the low maintenance benefits of composite decking while preserving a classic Woodstock aesthetic. We achieved this balance by pairing Trex Enhance Naturals decking in Rocky Harbor with pressure-treated pine handrails and sleek cable railing.",
                 details: "The result is a deck that feels warm and natural while maintaining clean lines and long-term durability, finished with Trex white PVC fascia for a polished look.",
               },
               {
                 image: "/deck_images/project5.png",
+                location: "Woodstock, NY",
                 title: "Multi-Level Composite Deck with Pool Integration",
                 description: "This large-scale rebuild included over 1,200 square feet of decking, two levels, three staircases, and precise cuts to accommodate an above-ground pool.",
                 details: "Constructed with TimberTech Coconut Husk decking, cable railings stained to match the boards, and a TimberTech cocktail rail, this project required careful planning and execution. The finished deck offers durability, safety, and timeless style built to last for years.",
               },
               {
                 image: "/deck_images/project6.png",
+                location: "Kingston, NY",
                 title: "Hot Tub–Ready Elevated Composite Deck",
                 description: "Designed to safely support a hot tub, this elevated deck required substantial structural framing and specialized equipment to position the tub atop the 8-foot-high, 350-square-foot platform.",
                 details: "We used Trex Clam Shell decking paired with hog wire railings to deliver a low-maintenance solution that balances strength, safety, and visual appeal without sacrificing openness.",
               },
               {
                 image: "/deck_images/project7.JPG",
+                location: "Kingston, NY",
                 title: "Custom Interior Red Oak Staircase with Cable Rail",
                 description: "This interior staircase was all about precision and detail. Built from red oak and finished with Cable Bullet cable railing, the staircase serves as both a functional structure and a design statement.",
                 details: "The clean lines and quality materials transform a simple stairway into a welcoming architectural feature the homeowner enjoys every day.",
               },
               {
                 image: "/deck_images/project8.png",
+                location: "Kingston, NY",
                 title: "Modern Front Entrance with Aluminum Cable Rail",
                 description: "The goal for this project was to create a clean, modern entrance that elevated the home's curb appeal. We replaced outdated columns with sleek black columns and installed aluminum Cable Bullet railings for a refined, contemporary look.",
                 details: "The deck surface and fascia were completed with Trex Clam Shell decking and matching fascia, tying the entire entrance together with a cohesive, low-maintenance finish.",
               },
               {
                 image: "/deck_images/project9.png",
+                location: "Woodstock, NY",
                 title: "Custom Cedar Fence with Automated Driveway Gate",
                 description: "This custom fence was designed to provide security while maintaining an open, natural feel. Built from natural cedar logs with one-inch cedar rails and backed by discreet black netting, the fence allows the homeowner's dog to safely enjoy the front yard.",
                 details: "An automated driveway gate completes the enclosure, offering peace of mind without compromising aesthetics.",
               },
               {
                 image: "/deck_images/project10.png",
+                location: "Newburgh, NY",
                 title: "Front Porch Composite Replacement",
                 description: "No project is too small to do right. This homeowner needed to replace a poorly installed wooden front porch originally built by their homebuilder.",
                 details: "We removed the existing structure and installed a maintenance-free Trex Toasted Sand front porch, complete with Trex composite railings and Trex white PVC fascia. The result is a clean, durable, and professional finish that significantly improves both appearance and longevity.",
@@ -679,7 +775,7 @@ export default function ConstructionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className={`flex flex-col gap-6 sm:gap-8 ${
+                className={`flex flex-col gap-4 sm:gap-6 md:gap-8 ${
                   idx % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                 }`}
               >
@@ -699,27 +795,79 @@ export default function ConstructionPage() {
                 {/* Content */}
                 <div className="lg:w-1/2 flex flex-col justify-center">
                   <span className="text-teal-500 text-xs font-semibold uppercase tracking-widest mb-2">
-                    Project {idx + 1}
+                    {project.location}
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
-                    {project.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    {project.description}
-                  </p>
-                  <p className="text-muted-foreground/80 text-sm leading-relaxed">
-                    {project.details}
-                  </p>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground flex-1">
+                      {project.title}
+                    </h3>
+                    {/* Mobile expand/collapse button */}
+                    <button
+                      onClick={() => toggleProject(idx)}
+                      className="lg:hidden flex-shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={expandedProjects.has(idx) ? "Collapse details" : "Expand details"}
+                    >
+                      <ChevronDown
+                        className={`w-5 h-5 transition-transform duration-200 ${
+                          expandedProjects.has(idx) ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {/* Desktop: always show, Mobile: show only when expanded */}
+                  <div className={`lg:block ${expandedProjects.has(idx) ? "block" : "hidden"}`}>
+                    <p className="text-muted-foreground leading-relaxed mb-4 text-sm sm:text-base">
+                      {project.description}
+                    </p>
+                    <p className="text-muted-foreground/80 text-xs sm:text-sm leading-relaxed">
+                      {project.details}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </section>
 
+        {/* Call to Action Section */}
+        <section className="mb-12 sm:mb-16 md:mb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="text-center space-y-6"
+          >
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
+              Like what you see?
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+              Get in touch and let's bring your project to life.
+            </p>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button
+                size="lg"
+                className="rounded-full bg-teal-600 px-8 py-6 text-base font-semibold shadow-lg shadow-teal-900/50 transition-all hover:bg-teal-700 hover:shadow-xl hover:shadow-teal-900/60"
+                onClick={() =>
+                  document
+                    .getElementById("inquiry")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Get a Quote
+              </Button>
+            </motion.div>
+          </motion.div>
+        </section>
+
         {/* Footer */}
         <footer className="mb-8 flex flex-col items-center justify-between gap-3 border-t-2 border-border pt-8 text-xs text-muted-foreground sm:flex-row">
           <span>© {new Date().getFullYear()} Woodstock Renewal Contracting. All rights reserved.</span>
-          <span>Woodstock, GA · Licensed & Insured</span>
+          <span>Woodstock, NY · Licensed & Insured</span>
         </footer>
       </main>
     </div>

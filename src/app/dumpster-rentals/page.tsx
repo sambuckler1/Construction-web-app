@@ -728,7 +728,7 @@ export default function DumpsterRentalsPage() {
         {/* Footer */}
         <footer className="mb-8 flex flex-col items-center justify-between gap-3 border-t-2 border-border pt-8 text-xs text-muted-foreground sm:flex-row">
           <span>© {new Date().getFullYear()} Woodstock Dumpster Rentals. All rights reserved.</span>
-          <span>Woodstock, GA · Licensed & Insured</span>
+          <span>Woodstock, NY · Licensed & Insured</span>
         </footer>
       </main>
     </div>
