@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Woodstock Renewal Contracting
+
+Marketing site for Woodstock Renewal Contracting — a dark, editorial, photography-first
+Next.js app with two offerings: **Construction** (landing + gallery) and **Dumpster
+Rentals**. Lead capture runs through [Resend](https://resend.com).
+
+## Stack
+
+- **Next.js 16** (App Router, React Server Components) + **TypeScript**
+- **Tailwind CSS v4** with a dark-only editorial theme (`src/app/globals.css`)
+- **react-hook-form** for the inquiry / appointment / contact forms
+- **Resend** for transactional email (API routes under `src/app/api/*`)
+- **sharp** for the one-time image optimization pipeline
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Set `RESEND_API_KEY` in `.env.local` for form submissions to send email.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
 
-## Learn More
+| Route                | Description                                        |
+| -------------------- | -------------------------------------------------- |
+| `/`                  | Construction landing (hero, services, inquiry form) |
+| `/gallery`           | Full project gallery (case studies)                |
+| `/dumpster-rentals`  | Dumpster rental landing (schedule + contact forms) |
+| `/api/construction`  | Sends construction inquiries via Resend            |
+| `/api/appointment`   | Sends dumpster appointment requests via Resend     |
+| `/api/contact`       | Sends contact messages via Resend                  |
 
-To learn more about Next.js, take a look at the following resources:
+## Images
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+All photography is served from `public/images/` as compressed WebP and rendered with
+`next/image` (responsive AVIF/WebP + blur placeholders). Do **not** commit large
+originals — run them through the pipeline instead.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Adding or updating photos
 
-## Deploy on Vercel
+1. Drop the source photo(s) somewhere in the repo (e.g. a temporary `public/_raw/` folder).
+2. Add an entry to the `sources` map in `scripts/optimize-images.mjs`:
+   `"<key>": "public/_raw/your-photo.jpg"`.
+3. Run the pipeline:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   npm run optimize-images
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   This writes `public/images/<key>.webp` and regenerates
+   `src/lib/image-manifest.ts` (dimensions + blur placeholder).
+
+4. Reference the image by its key from the manifest, e.g. `images["<key>"]`.
+5. Delete the raw source so it never ships in the build.
+
+> Note: some iPhone exports are HEIF-encoded even with a `.jpg`/`.png` extension. If a
+> file fails to convert, re-export it as a standard JPEG/PNG first.
+
+## Build
+
+```bash
+npm run build
+npm run start
+```
