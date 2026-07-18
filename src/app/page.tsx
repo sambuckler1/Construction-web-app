@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Hero } from "@/components/hero";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
@@ -10,20 +10,16 @@ import { projects } from "@/lib/projects";
 
 const services = [
   {
-    title: "Custom Decks & Outdoor Structures",
-    desc: "Composite and hardwood decks, railings, stairs, and exterior structures built to last.",
+    title: "Custom Decks",
+    desc: "Designed to finished, entirely in-house — from the first drawing to the last board.",
   },
   {
-    title: "Fences & Property Structures",
-    desc: "Custom fencing, gates, and site-built outdoor features tailored to your land.",
+    title: "Ground-Up Construction",
+    desc: "New builds and additions, managed start to finish as your single point of contact.",
   },
   {
-    title: "Basement & Interior Builds",
-    desc: "Full basement renovations, structural upgrades, and finished interior construction.",
-  },
-  {
-    title: "Ground-Up Project Management",
-    desc: "Design, engineering, permitting, and construction oversight from concept to completion.",
+    title: "General Construction",
+    desc: "Renovations, repairs, and the range of projects in between — just ask.",
   },
 ];
 
@@ -83,24 +79,21 @@ export default function ConstructionPage() {
       <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
         <SectionHeading
           eyebrow="What we do"
-          title="A single crew for the whole build"
-          description="From outdoor structures to full interior renovations, we manage every phase — so you get one point of contact and a cohesive result."
+          title="Custom decks, and everything we build around them"
+          description="Decks are our craft — but we handle full-scope construction too, all managed in-house."
         />
 
-        <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
+        <div className="mt-14 border-t border-border">
           {services.map((service, i) => (
             <Reveal
               key={service.title}
               delay={i * 80}
-              className="group bg-card p-8 transition-colors hover:bg-secondary sm:p-10"
+              className="flex flex-col gap-2 border-b border-border py-8 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
             >
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-                  {service.title}
-                </h3>
-                <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
+                {service.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground sm:w-3/5 sm:max-w-xl sm:text-base">
                 {service.desc}
               </p>
             </Reveal>
