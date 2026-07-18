@@ -27,17 +27,17 @@ const steps = [
   {
     n: "01",
     title: "Design & scope",
-    desc: "We walk the site, understand your goals, and translate them into a clear plan and transparent quote.",
+    desc: "We walk the site, understand your goals, and can provide recommendations from years of experience.",
   },
   {
     n: "02",
     title: "Build with craft",
-    desc: "Meticulous framing, premium materials, and hidden-fastener finishes — done right the first time.",
+    desc: "From foundation to finish, each step is carried out with care and percision.",
   },
   {
     n: "03",
     title: "Finish on time",
-    desc: "A single point of contact, steady communication, and a completion date we actually hit.",
+    desc: "Steady communication and reliable people.",
   },
 ];
 
@@ -201,10 +201,10 @@ export default function ConstructionPage() {
               <div>
                 <p className="eyebrow mb-2">Prefer to talk?</p>
                 <a
-                  href="tel:+15551234567"
+                  href="tel:+18457682488"
                   className="font-display text-2xl font-semibold tracking-tight transition-colors hover:text-primary"
                 >
-                  (555) 123-4567
+                  (845) 768-2488
                 </a>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
