@@ -84,20 +84,38 @@ export default function ConstructionPage() {
         />
 
         <div className="mt-14 border-t border-border">
-          {services.map((service, i) => (
-            <Reveal
-              key={service.title}
-              delay={i * 80}
-              className="flex flex-col gap-2 border-b border-border py-8 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
-            >
-              <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
-                {service.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground sm:w-3/5 sm:max-w-xl sm:text-base">
-                {service.desc}
-              </p>
-            </Reveal>
-          ))}
+          <Reveal
+            delay={0}
+            className="flex flex-col gap-2 border-b border-border py-8 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
+          >
+            <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
+              {services[0].title}
+            </h3>
+            <p className="text-sm leading-relaxed text-muted-foreground sm:w-3/5 sm:max-w-xl sm:text-base">
+              {services[0].desc}
+            </p>
+          </Reveal>
+
+          <div className="grid border-b border-border sm:grid-cols-2">
+            {services.slice(1).map((service, i) => (
+              <Reveal
+                key={service.title}
+                delay={(i + 1) * 80}
+                className={`flex flex-col gap-2 py-6 sm:py-8 ${
+                  i === 0
+                    ? "border-b border-border sm:border-b-0 sm:border-r sm:pr-8"
+                    : "sm:pl-8"
+                }`}
+              >
+                <h3 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
+                  {service.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {service.desc}
+                </p>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
