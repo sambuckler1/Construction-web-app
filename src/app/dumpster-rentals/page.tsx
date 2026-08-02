@@ -53,6 +53,7 @@ export default function DumpsterRentalsPage() {
     <>
       <Hero
         imageKey="dumpster-hero"
+        minHeightClass="min-h-[68svh] sm:min-h-[88svh]"
         eyebrow="Local Dump Trailer Rental"
         title={
           <>
