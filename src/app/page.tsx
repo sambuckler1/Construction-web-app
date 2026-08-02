@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Hero } from "@/components/hero";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
+import { ServicesAccordion } from "@/components/services-accordion";
 import { ConstructionInquiryForm } from "@/components/forms/construction-inquiry-form";
 import { images } from "@/lib/image-manifest";
 import { projects } from "@/lib/projects";
@@ -83,40 +84,9 @@ export default function ConstructionPage() {
           description="We handle everything: initial design based on your goals and vision, engineered plans, permits, physical job execution, and inspections."
         />
 
-        <div className="mt-10 border-t border-border sm:mt-14">
-          <Reveal
-            delay={0}
-            className="flex flex-col gap-2 border-b border-border py-6 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
-          >
-            <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
-              {services[0].title}
-            </h3>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:w-3/5 sm:max-w-xl sm:text-base">
-              {services[0].desc}
-            </p>
-          </Reveal>
-
-          <div className="grid border-b border-border sm:grid-cols-2">
-            {services.slice(1).map((service, i) => (
-              <Reveal
-                key={service.title}
-                delay={(i + 1) * 80}
-                className={`flex flex-col gap-2 py-6 sm:py-8 ${
-                  i === 0
-                    ? "border-b border-border sm:border-b-0 sm:border-r sm:pr-8"
-                    : "sm:pl-8"
-                }`}
-              >
-                <h3 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-                  {service.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {service.desc}
-                </p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
+        <Reveal>
+          <ServicesAccordion services={services} />
+        </Reveal>
       </section>
 
       {/* Approach band with alt image */}
