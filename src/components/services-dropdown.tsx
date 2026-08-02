@@ -37,22 +37,37 @@ export function ServicesDropdown({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="group flex w-full items-center justify-between gap-4 border-b border-border py-4 text-left"
+        className={cn(
+          "group flex w-full cursor-pointer items-center justify-between gap-4 rounded-xl border bg-card px-5 py-4 text-left transition-colors hover:border-primary/50 hover:bg-secondary/50 sm:px-6",
+          open ? "border-primary/50 bg-secondary/40" : "border-border"
+        )}
       >
-        <span className="flex items-baseline gap-3">
-          {eyebrow ? (
-            <span className="eyebrow hidden shrink-0 sm:inline">{eyebrow}</span>
-          ) : null}
-          <span className="text-balance font-display text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-xl">
+        <span className="flex flex-col gap-0.5">
+          {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
+          <span className="text-balance font-display text-lg font-semibold leading-snug tracking-tight sm:text-xl">
             {title}
           </span>
         </span>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:text-primary",
-            open && "rotate-180"
-          )}
-        />
+        <span className="flex shrink-0 items-center gap-3">
+          <span className="hidden text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground transition-colors group-hover:text-primary sm:inline">
+            {open ? "Hide" : "View"}
+          </span>
+          <span
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-full border transition-colors",
+              open
+                ? "border-primary/50 bg-primary/10 text-primary"
+                : "border-border text-muted-foreground group-hover:border-primary/50 group-hover:bg-primary/10 group-hover:text-primary"
+            )}
+          >
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 transition-transform duration-300",
+                open && "rotate-180"
+              )}
+            />
+          </span>
+        </span>
       </button>
 
       <div
