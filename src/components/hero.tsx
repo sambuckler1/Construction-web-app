@@ -23,7 +23,7 @@ export function Hero({
   subtitle,
   cta,
   className,
-  minHeightClass = "min-h-[92vh]",
+  minHeightClass = "min-h-[88svh]",
   priority = true,
 }: HeroProps) {
   const img = images[imageKey];
@@ -50,20 +50,24 @@ export function Hero({
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/10" />
       <div className="absolute inset-0 bg-black/25" />
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-32 sm:px-8 sm:pb-28">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-14 pt-28 sm:px-8 sm:pb-28 sm:pt-32">
         <div className="max-w-3xl">
           {eyebrow ? (
             <p className="eyebrow mb-5 text-white/70">{eyebrow}</p>
           ) : null}
-          <h1 className="font-display text-4xl font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
+          <h1 className="text-balance font-display text-4xl font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
             {title}
           </h1>
           {subtitle ? (
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">
+            <p className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-white/80 sm:text-lg">
               {subtitle}
             </p>
           ) : null}
-          {cta ? <div className="mt-9 flex flex-wrap gap-3">{cta}</div> : null}
+          {cta ? (
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {cta}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

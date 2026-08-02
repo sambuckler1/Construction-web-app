@@ -57,7 +57,7 @@ export default function DumpsterRentalsPage() {
         title={
           <>
             On-time delivery
-            <br />
+            <br className="hidden sm:block" />{" "}
             &amp; pickup. No delays.
           </>
         }
@@ -66,13 +66,13 @@ export default function DumpsterRentalsPage() {
           <>
             <Link
               href="#schedule"
-              className="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95"
+              className="w-full rounded-full bg-primary px-7 py-3 text-center text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95 sm:w-auto"
             >
               Schedule a Trailer
             </Link>
             <Link
               href="#contact"
-              className="rounded-full border border-white/30 bg-white/5 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15"
+              className="w-full rounded-full border border-white/30 bg-white/5 px-7 py-3 text-center text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15 sm:w-auto"
             >
               Contact the Owner
             </Link>
@@ -83,7 +83,7 @@ export default function DumpsterRentalsPage() {
 
       {/* Schedule */}
       <section id="schedule" className="scroll-mt-24">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-24 sm:px-8 sm:py-32 lg:grid-cols-[1.1fr_1fr] lg:gap-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:gap-20 lg:py-32">
           <Reveal className="rounded-2xl border border-border bg-card p-6 sm:p-8">
             <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
               Schedule a dump trailer
@@ -145,7 +145,7 @@ export default function DumpsterRentalsPage() {
 
       {/* Contact */}
       <section id="contact" className="scroll-mt-24 border-t border-border bg-card/40">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-24 sm:px-8 sm:py-32 lg:grid-cols-[1fr_1fr] lg:gap-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1fr_1fr] lg:gap-20 lg:py-32">
           <div>
             <SectionHeading
               eyebrow="Questions first?"

@@ -52,7 +52,7 @@ export default function ConstructionPage() {
         title={
           <>
             Decks and construction,
-            <br />
+            <br className="hidden sm:block" />{" "}
             built to be lived on.
           </>
         }
@@ -61,13 +61,13 @@ export default function ConstructionPage() {
           <>
             <Link
               href="#inquiry"
-              className="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95"
+              className="w-full rounded-full bg-primary px-7 py-3 text-center text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95 sm:w-auto"
             >
               Get a Quote
             </Link>
             <Link
               href="/gallery"
-              className="rounded-full border border-white/30 bg-white/5 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15"
+              className="w-full rounded-full border border-white/30 bg-white/5 px-7 py-3 text-center text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15 sm:w-auto"
             >
               View Our Work
             </Link>
@@ -76,17 +76,17 @@ export default function ConstructionPage() {
       />
 
       {/* Services */}
-      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
         <SectionHeading
           eyebrow="What we do"
           title="Custom decks, and everything we build around them"
           description="We handle everything: initial design based on your goals and vision, engineered plans, permits, physical job execution, and inspections."
         />
 
-        <div className="mt-14 border-t border-border">
+        <div className="mt-10 border-t border-border sm:mt-14">
           <Reveal
             delay={0}
-            className="flex flex-col gap-2 border-b border-border py-8 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
+            className="flex flex-col gap-2 border-b border-border py-6 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10"
           >
             <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
               {services[0].title}
@@ -131,12 +131,12 @@ export default function ConstructionPage() {
           className="object-cover"
         />
         <div className="absolute inset-0 bg-background/85" />
-        <div className="relative mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+        <div className="relative mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
           <SectionHeading
             eyebrow="How we work"
             title="Clear process, no surprises"
           />
-          <div className="mt-14 grid gap-10 md:grid-cols-3">
+          <div className="mt-10 grid gap-10 sm:mt-14 md:grid-cols-3">
             {steps.map((step, i) => (
               <Reveal key={step.n} delay={i * 100}>
                 <span className="font-display text-4xl font-semibold text-primary/80">
@@ -156,7 +156,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* Gallery teaser */}
-      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
             eyebrow="Selected work"
@@ -174,7 +174,7 @@ export default function ConstructionPage() {
           </Reveal>
         </div>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-5 sm:mt-14 sm:grid-cols-2 lg:grid-cols-3">
           {teaser.map((project, i) => {
             const img = images[project.imageKey];
             return (
@@ -207,7 +207,7 @@ export default function ConstructionPage() {
         id="inquiry"
         className="scroll-mt-24 border-t border-border bg-card/40"
       >
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-24 sm:px-8 sm:py-32 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-24 lg:py-32 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
           <div>
             <SectionHeading
               eyebrow="Start your project"

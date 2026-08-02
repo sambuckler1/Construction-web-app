@@ -18,14 +18,14 @@ export default function GalleryPage() {
     <>
       <Hero
         imageKey="gallery-hero"
-        minHeightClass="min-h-[62vh]"
+        minHeightClass="min-h-[55svh]"
         eyebrow="Selected work"
         title="Craftsmanship, project by project"
         subtitle="A closer look at recent decks, fences, and interior builds — the materials we chose and why."
       />
 
-      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
-        <div className="space-y-24 sm:space-y-32">
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
+        <div className="space-y-16 sm:space-y-24 lg:space-y-32">
           {projects.map((project, idx) => {
             const img = images[project.imageKey];
             const reversed = idx % 2 === 1;
@@ -68,7 +68,7 @@ export default function GalleryPage() {
 
       {/* CTA */}
       <section className="border-t border-border bg-card/40">
-        <div className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
+        <div className="mx-auto max-w-3xl px-5 py-16 text-center sm:px-8 sm:py-24 lg:py-32">
           <Reveal>
             <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               Like what you see?
