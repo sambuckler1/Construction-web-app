@@ -94,28 +94,28 @@ export default function ConstructionPage() {
           src={images["construction-hero-alt"].src}
           alt=""
           fill
-          sizes="100vw"
+          sizes="(max-width: 640px) 200vw, 100vw"
           placeholder="blur"
           blurDataURL={images["construction-hero-alt"].blurDataURL}
-          className="object-cover"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-background/85" />
-        <div className="relative mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
+        <div className="relative mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-24 lg:py-32">
           <SectionHeading
             eyebrow="How we work"
             title="Clear process, no surprises"
           />
-          <div className="mt-10 grid gap-10 sm:mt-14 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 sm:mt-14 sm:gap-10 md:grid-cols-3">
             {steps.map((step, i) => (
               <Reveal key={step.n} delay={i * 100}>
-                <span className="font-display text-4xl font-semibold text-primary/80">
+                <span className="font-display text-3xl font-semibold text-primary/80 sm:text-4xl">
                   {step.n}
                 </span>
-                <div className="hairline my-5" />
-                <h3 className="font-display text-xl font-semibold tracking-tight">
+                <div className="hairline my-3 sm:my-5" />
+                <h3 className="font-display text-lg font-semibold tracking-tight sm:text-xl">
                   {step.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:mt-3">
                   {step.desc}
                 </p>
               </Reveal>
