@@ -54,10 +54,10 @@ export function Footer() {
               <li>Mon–Sat · 7:00am – 6:00pm</li>
               <li>
                 <a
-                  href="tel:+15551234567"
+                  href="tel:+18457682488"
                   className="transition-colors hover:text-foreground"
                 >
-                  (555) 123-4567
+                  (845) 768-2488
                 </a>
               </li>
             </ul>

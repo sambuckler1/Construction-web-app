@@ -77,7 +77,7 @@ export default function ConstructionPage() {
       />
 
       {/* Services */}
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
+      <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10 lg:py-12">
         <Reveal>
           <ServicesDropdown
             eyebrow="What we do"

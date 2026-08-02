@@ -37,17 +37,19 @@ export function ServicesDropdown({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="group flex w-full max-w-2xl items-start justify-between gap-6 text-left"
+        className="group flex w-full items-center justify-between gap-4 border-b border-border py-4 text-left"
       >
-        <span>
-          {eyebrow ? <span className="eyebrow mb-4 block">{eyebrow}</span> : null}
-          <span className="block text-balance font-display text-3xl font-semibold leading-tight tracking-tight transition-colors group-hover:text-primary sm:text-4xl md:text-5xl">
+        <span className="flex items-baseline gap-3">
+          {eyebrow ? (
+            <span className="eyebrow hidden shrink-0 sm:inline">{eyebrow}</span>
+          ) : null}
+          <span className="text-balance font-display text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-xl">
             {title}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "mt-1 h-7 w-7 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:text-primary sm:h-8 sm:w-8",
+            "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:text-primary",
             open && "rotate-180"
           )}
         />
@@ -64,12 +66,12 @@ export function ServicesDropdown({
       >
         <div className="overflow-hidden">
           {description ? (
-            <p className="mt-4 max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-6 max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
               {description}
             </p>
           ) : null}
 
-          <div className="mt-10 border-t border-border sm:mt-14">
+          <div className="mt-6 border-t border-border">
             <div className="flex flex-col gap-2 border-b border-border py-6 sm:flex-row sm:items-baseline sm:justify-between sm:gap-12 sm:py-10">
               <h3 className="font-display text-2xl font-semibold tracking-tight sm:w-2/5 sm:text-3xl">
                 {services[0].title}
