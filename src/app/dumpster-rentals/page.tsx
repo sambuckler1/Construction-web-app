@@ -158,10 +158,10 @@ export default function DumpsterRentalsPage() {
               <div>
                 <p className="eyebrow mb-2">Call or text</p>
                 <a
-                  href="tel:+15551234567"
+                  href="tel:+8457682488"
                   className="font-display text-2xl font-semibold tracking-tight transition-colors hover:text-primary"
                 >
-                  (555) 123-4567
+                  (845) 768-2488
                 </a>
               </div>
               <div>
