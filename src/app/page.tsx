@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Hero } from "@/components/hero";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
-import { ServicesAccordion } from "@/components/services-accordion";
+import { ServicesDropdown } from "@/components/services-dropdown";
 import { ConstructionInquiryForm } from "@/components/forms/construction-inquiry-form";
 import { images } from "@/lib/image-manifest";
 import { projects } from "@/lib/projects";
@@ -78,14 +78,13 @@ export default function ConstructionPage() {
 
       {/* Services */}
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24 lg:py-32">
-        <SectionHeading
-          eyebrow="What we do"
-          title="Custom decks, and everything we build around them"
-          description="We handle everything: initial design based on your goals and vision, engineered plans, permits, physical job execution, and inspections."
-        />
-
         <Reveal>
-          <ServicesAccordion services={services} />
+          <ServicesDropdown
+            eyebrow="What we do"
+            title="Custom decks, and everything we build around them"
+            description="We handle everything: initial design based on your goals and vision, engineered plans, permits, physical job execution, and inspections."
+            services={services}
+          />
         </Reveal>
       </section>
 
