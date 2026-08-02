@@ -41,10 +41,10 @@ export function Hero({
         alt=""
         fill
         priority={priority}
-        sizes="100vw"
+        sizes="(max-width: 640px) 200vw, 100vw"
         placeholder="blur"
         blurDataURL={img.blurDataURL}
-        className="object-cover"
+        className="object-cover object-center"
       />
       {/* Bottom-weighted gradient so headline text sits directly on the image. */}
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/10" />
