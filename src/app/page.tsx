@@ -11,11 +11,11 @@ import { projects } from "@/lib/projects";
 const services = [
   {
     title: "Custom Decks",
-    desc: "Designed to finished, entirely in-house — from the first drawing to the last board.",
+    desc: "Composite decking, Hardwood decking, Pine decking, and more. Cable rails, aluminum rails, composite rails, traditional wood rails, and more. Solid and careful framing & flashing with deep, strong footings make for a lasting deck.",
   },
   {
     title: "Ground-Up Construction",
-    desc: "New builds and additions, managed start to finish as your single point of contact.",
+    desc: "New builds and additions, accessory dwelling units.",
   },
   {
     title: "General Construction",
@@ -36,8 +36,8 @@ const steps = [
   },
   {
     n: "03",
-    title: "Finish on time",
-    desc: "Steady communication and reliable people.",
+    title: "Finish a beautiful product",
+    desc: "Steady communication with reliable people until the very end.",
   },
 ];
 
@@ -56,7 +56,7 @@ export default function ConstructionPage() {
             built to be lived on.
           </>
         }
-        subtitle="Custom deck building, renovations, and full-scope construction across Woodstock and the Hudson Valley — quality craftsmanship, transparent pricing, on-time completion."
+        subtitle="Custom deck building, renovations, and full-scope construction across Woodstock and the Hudson Valley."
         cta={
           <>
             <Link
@@ -80,7 +80,7 @@ export default function ConstructionPage() {
         <SectionHeading
           eyebrow="What we do"
           title="Custom decks, and everything we build around them"
-          description="Decks are our craft — but we handle full-scope construction too, all managed in-house."
+          description="We handle everything: initial design based on your goals and vision, engineered plans, permits, physical job execution, and inspections."
         />
 
         <div className="mt-14 border-t border-border">

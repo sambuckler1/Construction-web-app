@@ -11,14 +11,10 @@ import { images } from "@/lib/image-manifest";
 export const metadata: Metadata = {
   title: "Dumpster Rentals",
   description:
-    "Driveway-safe dump trailer rentals for contractors and homeowners in Woodstock, NY. Same-week availability, transparent pricing, on-time delivery and pickup.",
+    "Up to 12-yard capacity driveway-safe dump trailer rentals for contractors and homeowners in Woodstock, NY. Same-week availability, transparent pricing, on-time delivery and pickup.",
 };
 
-const stats = [
-  { value: "100%", label: "On-time rate" },
-  { value: "0", label: "Surprise fees" },
-  { value: "Same wk", label: "Availability" },
-];
+
 
 const commonProjects = [
   { title: "Home & Estate Cleanouts", desc: "Furniture, household junk, storage cleanouts." },
@@ -65,7 +61,7 @@ export default function DumpsterRentalsPage() {
             &amp; pickup. No delays.
           </>
         }
-        subtitle="Driveway-safe dump trailers for contractors and homeowners. Same-week availability, transparent pricing, zero surprises."
+        subtitle="Driveway-safe dump trailers for contractors and homeowners."
         cta={
           <>
             <Link
@@ -84,69 +80,6 @@ export default function DumpsterRentalsPage() {
         }
       />
 
-      {/* Stats */}
-      <section className="border-b border-border">
-        <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-border px-5 sm:px-8">
-          {stats.map((stat) => (
-            <div key={stat.label} className="px-2 py-8 text-center sm:py-10">
-              <div className="font-display text-2xl font-semibold text-primary sm:text-4xl">
-                {stat.value}
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground sm:text-sm">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Common projects */}
-      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
-        <SectionHeading
-          eyebrow="What we handle"
-          title="Driveway-safe drop-off & pickup"
-          description="For cleanouts, remodels, and demolition debris — big or small."
-        />
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {commonProjects.map((job, i) => (
-            <Reveal
-              key={job.title}
-              delay={i * 70}
-              className="rounded-2xl border border-border bg-card p-6"
-            >
-              <h3 className="font-display text-lg font-semibold tracking-tight">
-                {job.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {job.desc}
-              </p>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Why dump trailer */}
-      <section className="border-y border-border bg-card/40">
-        <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
-          <SectionHeading
-            eyebrow="Trailer vs. roll-off"
-            title="Better access, faster service, less damage"
-          />
-          <div className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2">
-            {benefits.map((benefit, i) => (
-              <Reveal key={benefit.title} delay={i * 70}>
-                <div className="hairline mb-5" />
-                <h3 className="font-display text-xl font-semibold tracking-tight text-primary">
-                  {benefit.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  {benefit.desc}
-                </p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Schedule */}
       <section id="schedule" className="scroll-mt-24">
