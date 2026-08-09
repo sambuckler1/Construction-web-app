@@ -24,6 +24,8 @@ const QUALITY = 78;
 // key -> source file (relative to repo root). Keys become the manifest entries
 // and the output filenames (public/images/<key>.webp).
 const sources = {
+  "hero-zoom-close": "public/images/hero-animation/hero-1.JPG",
+  "hero-zoom-wide": "public/images/hero-animation/hero-2.JPG",
   "construction-hero": "public/deck_images/hero2.png",
   "construction-hero-alt": "public/deck_images/IMG_6267 2.jpeg",
   "gallery-hero": "public/deck_images/IMG_6234.jpeg",
@@ -42,9 +44,28 @@ const sources = {
   project10: "public/deck_images/project10.png",
 };
 
+// Load the previously generated manifest so we can preserve entries whose
+// large source photos were removed (e.g. after a --clean run). Keys are
+// double-quoted strings, so the object literal is valid JSON we can extract.
+async function loadExistingManifest() {
+  if (!existsSync(manifestPath)) return {};
+  try {
+    const text = await readFile(manifestPath, "utf8");
+    const match = text.match(
+      /export const images = (\{[\s\S]*?\}) as const satisfies/
+    );
+    if (!match) return {};
+    return JSON.parse(match[1]);
+  } catch (err) {
+    console.warn(`WARN  could not parse existing manifest: ${err.message}`);
+    return {};
+  }
+}
+
 async function run() {
   await mkdir(outDir, { recursive: true });
 
+  const existing = await loadExistingManifest();
   const manifest = {};
   let totalBefore = 0;
   let totalAfter = 0;
@@ -52,7 +73,12 @@ async function run() {
   for (const [key, relSource] of Object.entries(sources)) {
     const sourcePath = path.join(root, relSource);
     if (!existsSync(sourcePath)) {
-      console.warn(`SKIP  ${key}: missing source ${relSource}`);
+      if (existing[key]) {
+        manifest[key] = existing[key];
+        console.log(`KEEP  ${key}: source missing, preserved existing entry`);
+      } else {
+        console.warn(`SKIP  ${key}: missing source ${relSource}`);
+      }
       continue;
     }
 

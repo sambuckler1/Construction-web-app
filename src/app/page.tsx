@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Hero } from "@/components/hero";
+import { ZoomHero } from "@/components/zoom-hero";
 import { Reveal } from "@/components/reveal";
 import { SectionHeading } from "@/components/section-heading";
 import { ServicesDropdown } from "@/components/services-dropdown";
@@ -47,8 +47,9 @@ const teaser = projects.slice(0, 3);
 export default function ConstructionPage() {
   return (
     <>
-      <Hero
-        imageKey="construction-hero"
+      <ZoomHero
+        closeKey="hero-zoom-close"
+        wideKey="hero-zoom-wide"
         eyebrow="Woodstock, NY · Licensed & Insured"
         title={
           <>

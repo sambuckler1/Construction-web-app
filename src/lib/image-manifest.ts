@@ -9,6 +9,18 @@ export type OptimizedImage = {
 };
 
 export const images = {
+  "hero-zoom-close": {
+    "src": "/images/hero-zoom-close.webp",
+    "width": 2048,
+    "height": 1536,
+    "blurDataURL": "data:image/webp;base64,UklGRlwAAABXRUJQVlA4IFAAAACwAwCdASoUAA8APu1orU6ppiSiMAgBMB2JZwDE2B5vjSLXczpFAAD+VHLsoe/q1Mx6gjEqIFzLzAGWAd7FSkLq6YvzvBonZYNADdyL0SAAAA=="
+  },
+  "hero-zoom-wide": {
+    "src": "/images/hero-zoom-wide.webp",
+    "width": 1536,
+    "height": 2048,
+    "blurDataURL": "data:image/webp;base64,UklGRowAAABXRUJQVlA4IIAAAAAQBQCdASoUABsAPu1mq0+ppSOiMBgIATAdiWUAwNwQ8QgtsZzG3oje4NGM6I3WQdkAAP7Fb60e/Ko7ol08kDWp+y3/gdLNk/avk4HsOL5UBqyHQXrswxWvcn4Vb1oJtTWJw244D7+lLR6e00e/Oy+Prl0Ckwm1PajBGQf7dEuAAA=="
+  },
   "construction-hero": {
     "src": "/images/construction-hero.webp",
     "width": 2400,
