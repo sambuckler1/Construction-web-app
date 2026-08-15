@@ -81,8 +81,11 @@ export function ZoomHero({
 
   // `zoomed` drives the fixed-duration CSS transition; `instant` snaps to the
   // settled wide state with no animation (reduced motion / mounted scrolled).
+  // `wideReady` gates mounting the under-layer so LCP isn't fighting two
+  // full-bleed downloads; the close-up is what the visitor sees first.
   const [zoomed, setZoomed] = useState(false);
   const [instant, setInstant] = useState(false);
+  const [wideReady, setWideReady] = useState(false);
 
   useEffect(() => {
     if (
@@ -91,6 +94,7 @@ export function ZoomHero({
     ) {
       setInstant(true);
       setZoomed(true);
+      setWideReady(true);
       return;
     }
 
@@ -109,6 +113,8 @@ export function ZoomHero({
     const begin = () => {
       if (phase !== "idle") return;
       phase = "playing";
+      // Ensure the wide shot is loading before the reveal runs.
+      setWideReady(true);
       window.scrollTo(0, 0);
       setZoomed(true);
       window.setTimeout(finish, duration + 60);
@@ -143,6 +149,14 @@ export function ZoomHero({
       window.removeEventListener("keydown", onKey);
     };
   }, [duration]);
+
+  // Kick off the wide fetch once the close-up has painted (or after a short
+  // fallback so a stalled onLoad can't strand the reveal).
+  useEffect(() => {
+    if (wideReady) return;
+    const id = window.setTimeout(() => setWideReady(true), 1200);
+    return () => window.clearTimeout(id);
+  }, [wideReady]);
 
   const wideStyle: CSSProperties = {
     transform: zoomed ? "scale(1)" : `scale(${wideStartScale})`,
@@ -189,17 +203,19 @@ export function ZoomHero({
       {/* Wide shot underneath, starts zoomed into the corner detail. */}
       <div className="absolute inset-0" style={wideStyle}>
         <div className="absolute inset-0" style={wideTilt}>
-          <Image
-            src={wide.src}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            placeholder="blur"
-            blurDataURL={wide.blurDataURL}
-            className="object-cover"
-            style={{ objectPosition: wideObjectPosition }}
-          />
+          {wideReady ? (
+            <Image
+              src={wide.src}
+              alt=""
+              fill
+              unoptimized
+              sizes="100vw"
+              placeholder="blur"
+              blurDataURL={wide.blurDataURL}
+              className="object-cover"
+              style={{ objectPosition: wideObjectPosition }}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -211,10 +227,12 @@ export function ZoomHero({
             alt=""
             fill
             priority
+            unoptimized
             sizes="100vw"
             placeholder="blur"
             blurDataURL={close.blurDataURL}
             className="object-cover object-center"
+            onLoad={() => setWideReady(true)}
           />
         </div>
       </div>

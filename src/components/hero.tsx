@@ -41,6 +41,9 @@ export function Hero({
         alt=""
         fill
         priority={priority}
+        // Already resized/compressed by scripts/optimize-images.mjs — serve the
+        // static WebP directly so LCP isn't blocked on /_next/image re-encode.
+        unoptimized
         sizes="100vw"
         placeholder="blur"
         blurDataURL={img.blurDataURL}

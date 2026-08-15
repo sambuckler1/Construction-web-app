@@ -95,6 +95,7 @@ export default function ConstructionPage() {
           src={images["construction-hero-alt"].src}
           alt=""
           fill
+          unoptimized
           sizes="100vw"
           placeholder="blur"
           blurDataURL={images["construction-hero-alt"].blurDataURL}

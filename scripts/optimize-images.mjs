@@ -21,11 +21,11 @@ const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "public", "images");
 const manifestPath = path.join(root, "src", "lib", "image-manifest.ts");
 
-// Full-bleed heroes need enough resolution for retina desktops; gallery
-// slides display at ~50vw so 1600px is plenty after devicePixelRatio.
-const MAX_WIDTH_HERO = 2400;
+// Full-bleed heroes and gallery tiles share a 1600px cap — enough for retina
+// at 100vw / 50vw without paying for 2400px encodes on LCP.
+const MAX_WIDTH_HERO = 1600;
 const MAX_WIDTH_GALLERY = 1600;
-const QUALITY = 72;
+const QUALITY = 70;
 
 // key -> source file (relative to repo root). Keys become the manifest entries
 // and the output filenames (public/images/<key>.webp).
@@ -224,25 +224,33 @@ async function run() {
 
   for (const [key, relSource] of Object.entries(sources)) {
     const sourcePath = path.join(root, relSource);
-    if (!existsSync(sourcePath)) {
-      if (existing[key]) {
-        manifest[key] = existing[key];
-        console.log(`KEEP  ${key}: source missing, preserved existing entry`);
-      } else {
-        console.warn(`SKIP  ${key}: missing source ${relSource}`);
-      }
+    const outFile = path.join(outDir, `${key}.webp`);
+    const extraDeg = extraRotation[key] ?? 0;
+
+    // Prefer the curated original; if it's gone, re-encode the existing WebP
+    // so size/quality tweaks still apply on re-runs.
+    let inputPath = null;
+    if (existsSync(sourcePath)) {
+      inputPath = sourcePath;
+    } else if (existsSync(outFile)) {
+      inputPath = outFile;
+      console.log(`REOPT ${key}: source missing, re-encoding existing WebP`);
+    } else if (existing[key]) {
+      manifest[key] = existing[key];
+      console.log(`KEEP  ${key}: source missing, preserved existing entry`);
+      continue;
+    } else {
+      console.warn(`SKIP  ${key}: missing source ${relSource}`);
       continue;
     }
 
-    const input = await readFile(sourcePath);
-    const extraDeg = extraRotation[key] ?? 0;
+    const input = await readFile(inputPath);
 
     try {
       const { data, info, blurDataURL } = await optimize(input, {
         extraDeg,
         maxWidth: MAX_WIDTH_HERO,
       });
-      const outFile = path.join(outDir, `${key}.webp`);
       await writeFile(outFile, data);
       totalBefore += input.length;
       totalAfter += data.length;
