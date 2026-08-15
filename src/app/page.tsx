@@ -7,7 +7,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { ServicesDropdown } from "@/components/services-dropdown";
 import { ConstructionInquiryForm } from "@/components/forms/construction-inquiry-form";
 import { images } from "@/lib/image-manifest";
-import { projects } from "@/lib/projects";
+import { projectCover, projectKey, projects } from "@/lib/projects";
 
 const services = [
   {
@@ -146,9 +146,10 @@ export default function ConstructionPage() {
 
         <div className="mt-10 grid gap-5 sm:mt-14 sm:grid-cols-2 lg:grid-cols-3">
           {teaser.map((project, i) => {
-            const img = images[project.imageKey];
+            const img = projectCover(project);
+            if (!img) return null;
             return (
-              <Reveal key={project.imageKey} delay={i * 90}>
+              <Reveal key={projectKey(project)} delay={i * 90}>
                 <Link href="/gallery" className="group block">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary">
                     <Image
