@@ -54,6 +54,7 @@ export default function HowWeFramePage() {
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   placeholder="blur"
                   blurDataURL={slide.blurDataURL}
+                  priority={i < 3}
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>

@@ -21,8 +21,11 @@ const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "public", "images");
 const manifestPath = path.join(root, "src", "lib", "image-manifest.ts");
 
-const MAX_WIDTH = 2400;
-const QUALITY = 78;
+// Full-bleed heroes need enough resolution for retina desktops; gallery
+// slides display at ~50vw so 1600px is plenty after devicePixelRatio.
+const MAX_WIDTH_HERO = 2400;
+const MAX_WIDTH_GALLERY = 1600;
+const QUALITY = 72;
 
 // key -> source file (relative to repo root). Keys become the manifest entries
 // and the output filenames (public/images/<key>.webp).
@@ -94,11 +97,11 @@ function readImageBuffer(filePath) {
 }
 
 // Optimize one image buffer into a main WebP + a tiny base64 blur placeholder.
-async function optimize(input, extraDeg = 0) {
+async function optimize(input, { extraDeg = 0, maxWidth = MAX_WIDTH_HERO } = {}) {
   const pipeline = sharp(input).rotate();
   if (extraDeg) pipeline.rotate(extraDeg);
   pipeline
-    .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+    .resize({ width: maxWidth, withoutEnlargement: true })
     .webp({ quality: QUALITY });
   const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
 
@@ -161,7 +164,9 @@ async function buildGalleries() {
     for (let i = 0; i < sources.length; i++) {
       try {
         const input = await readImageBuffer(path.join(dir, sources[i]));
-        const { data, info, blurDataURL } = await optimize(input);
+        const { data, info, blurDataURL } = await optimize(input, {
+          maxWidth: MAX_WIDTH_GALLERY,
+        });
         const outName = `slide-${i}.webp`;
         await writeFile(path.join(dir, outName), data);
         before += input.length;
@@ -233,7 +238,10 @@ async function run() {
     const extraDeg = extraRotation[key] ?? 0;
 
     try {
-      const { data, info, blurDataURL } = await optimize(input, extraDeg);
+      const { data, info, blurDataURL } = await optimize(input, {
+        extraDeg,
+        maxWidth: MAX_WIDTH_HERO,
+      });
       const outFile = path.join(outDir, `${key}.webp`);
       await writeFile(outFile, data);
       totalBefore += input.length;

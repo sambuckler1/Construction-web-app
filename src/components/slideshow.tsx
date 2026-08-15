@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { OptimizedImage } from "@/lib/image-manifest";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +46,15 @@ export function Slideshow({
     return () => window.clearInterval(id);
   }, [count, interval, paused]);
 
+  // Only mount the current slide plus neighbors. Opacity-0 images still sit in
+  // the viewport, so rendering every slide made next/image fetch the whole
+  // gallery up front. Cap at three so forward/back crossfades stay smooth.
+  const mountedIndexes = useMemo(() => {
+    if (count <= 1) return [0];
+    if (count === 2) return [0, 1];
+    return [index, (index + 1) % count, (index - 1 + count) % count];
+  }, [count, index]);
+
   if (count === 0) return null;
 
   const single = count === 1;
@@ -64,23 +73,26 @@ export function Slideshow({
       aria-roledescription="carousel"
       aria-label={alt}
     >
-      {slides.map((slide, i) => (
-        <Image
-          key={slide.src}
-          src={slide.src}
-          alt={single ? alt : `${alt} — image ${i + 1} of ${count}`}
-          fill
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          placeholder="blur"
-          blurDataURL={slide.blurDataURL}
-          className={cn(
-            "object-cover transition-opacity duration-700 ease-out",
-            i === index ? "opacity-100" : "opacity-0"
-          )}
-          aria-hidden={i !== index}
-          priority={i === 0}
-        />
-      ))}
+      {mountedIndexes.map((i) => {
+        const slide = slides[i];
+        return (
+          <Image
+            key={slide.src}
+            src={slide.src}
+            alt={single ? alt : `${alt} — image ${i + 1} of ${count}`}
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={slide.blurDataURL}
+            className={cn(
+              "object-cover transition-opacity duration-700 ease-out",
+              i === index ? "opacity-100" : "opacity-0"
+            )}
+            aria-hidden={i !== index}
+            priority={i === 0}
+          />
+        );
+      })}
 
       {!single ? (
         <>
